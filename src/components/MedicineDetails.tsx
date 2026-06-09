@@ -348,12 +348,12 @@ export const MedicineDetails: React.FC<MedicineDetailsProps> = ({
         </h3>
 
         <div className="max-h-[180px] overflow-y-auto space-y-2 pr-1">
-          {medicine.logs.length === 0 && medicine.refills.length === 0 ? (
+          {medicine.logs.length === 0 ? (
             <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">
               No activity logs recorded yet / अभी तक कोई गतिविधि लॉग रिकॉर्ड नहीं है।
             </p>
           ) : (
-            // Combine both logs and refills into a sorted chronological history timeline
+            // Chronological history timeline
             [
               ...medicine.logs.map(log => ({
                 id: log.id,
@@ -364,16 +364,6 @@ export const MedicineDetails: React.FC<MedicineDetailsProps> = ({
                 status: log.status,
                 text: `${log.status === 'taken' ? 'Took' : 'Missed'} dose during ${log.timeSlot}`,
                 color: log.status === 'taken' ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'text-rose-500 bg-rose-50 dark:bg-rose-950/20'
-              })),
-              ...medicine.refills.map(refill => ({
-                id: refill.id,
-                type: 'refill',
-                timestamp: refill.date,
-                date: new Date(refill.date).toLocaleDateString('en-CA'),
-                timeSlot: '',
-                status: 'refill',
-                text: `Refilled stock +${refill.quantityAdded} tab (${refill.notes || 'No notes'})`,
-                color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20'
               }))
             ]
               .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())

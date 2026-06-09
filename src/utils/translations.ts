@@ -2,7 +2,7 @@ import { TranslationDict } from '../types';
 
 export const translations: Record<'en' | 'hi', TranslationDict> = {
   en: {
-    appName: "Upchaar",
+    appName: "My Medicine Tracker",
     appSubtitle: "Medicine Tracker & Stock Manager",
     totalMedicines: "Total Medicines",
     lowStockAlerts: "Low Stock (≤10 days)",
@@ -52,7 +52,7 @@ export const translations: Record<'en' | 'hi', TranslationDict> = {
     medicinesList: "Medicines List"
   },
   hi: {
-    appName: "उपचार",
+    appName: "My Medicine Tracker",
     appSubtitle: "दवा ट्रैकर और स्टॉक मैनेजर",
     totalMedicines: "कुल दवाएं",
     lowStockAlerts: "कम स्टॉक (≤१० दिन)",

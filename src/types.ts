@@ -1,9 +1,3 @@
-export interface RefillRecord {
-  id: string;
-  date: string;
-  quantityAdded: number;
-  notes?: string;
-}
 
 export interface DoseLog {
   id: string;
@@ -23,7 +17,6 @@ export interface Medicine {
   schedule: string[];         // Array of times: "Morning", "Night", or custom time strings
   startDate: string;          // YYYY-MM-DD
   notes?: string;
-  refills: RefillRecord[];
   logs: DoseLog[];
   createdAt: string;
 }

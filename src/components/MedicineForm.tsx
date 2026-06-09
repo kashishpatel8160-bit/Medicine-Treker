@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Medicine, Language, TranslationDict } from '../types';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Check } from 'lucide-react';
 
 interface MedicineFormProps {
   isOpen: boolean;
@@ -21,8 +21,8 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
   t
 }) => {
   const [name, setName] = useState('');
-  const [totalTablets, setTotalTablets] = useState<number>(30);
-  const [dosagePerTime, setDosagePerTime] = useState<number>(1);
+  const [totalTablets, setTotalTablets] = useState<number | ''>('');
+  const [dosagePerTime, setDosagePerTime] = useState<number | ''>('');
   const [selectedStandardSlots, setSelectedStandardSlots] = useState<string[]>([]);
   const [customSlots, setCustomSlots] = useState<string[]>([]);
   const [newCustomSlot, setNewCustomSlot] = useState('');
@@ -47,8 +47,8 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
     } else {
       // Reset
       setName('');
-      setTotalTablets(30);
-      setDosagePerTime(1);
+      setTotalTablets('');
+      setDosagePerTime('');
       setSelectedStandardSlots(['Morning', 'Night']);
       setCustomSlots([]);
       setStartDate(new Date().toLocaleDateString('en-CA'));
@@ -89,12 +89,14 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       return;
     }
 
-    if (totalTablets <= 0 || isNaN(totalTablets)) {
+    const parsedTotalTablets = typeof totalTablets === 'number' ? totalTablets : parseInt(totalTablets || '0');
+    if (!parsedTotalTablets || isNaN(parsedTotalTablets) || parsedTotalTablets <= 0) {
       setError('Tablet count must be greater than 0 / गोलियों की संख्या 0 से अधिक होनी चाहिए');
       return;
     }
 
-    if (dosagePerTime <= 0 || isNaN(dosagePerTime)) {
+    const parsedDosagePerTime = typeof dosagePerTime === 'number' ? dosagePerTime : parseInt(dosagePerTime || '0');
+    if (!parsedDosagePerTime || isNaN(parsedDosagePerTime) || parsedDosagePerTime <= 0) {
       setError('Dosage must be greater than 0 / खुराक 0 से अधिक होनी चाहिए');
       return;
     }
@@ -108,9 +110,9 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
     onSave({
       id: editMedicine?.id,
       name: name.trim(),
-      totalTablets,
-      currentStock: editMedicine ? Math.min(totalTablets, editMedicine.currentStock) : totalTablets, // keep current stock when editing or override if smaller? Actually, let's keep current stock or update
-      dosagePerTime,
+      totalTablets: parsedTotalTablets,
+      currentStock: editMedicine ? Math.min(parsedTotalTablets, editMedicine.currentStock) : parsedTotalTablets,
+      dosagePerTime: parsedDosagePerTime,
       schedule: combinedSchedule,
       startDate,
       notes: notes.trim()
@@ -177,7 +179,11 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
               <input
                 type="number"
                 value={totalTablets}
-                onChange={(e) => setTotalTablets(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTotalTablets(val === '' ? '' : parseInt(val));
+                }}
+                placeholder="Enter total tablets"
                 className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
                 min="1"
               />
@@ -191,7 +197,11 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
               <input
                 type="number"
                 value={dosagePerTime}
-                onChange={(e) => setDosagePerTime(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDosagePerTime(val === '' ? '' : parseInt(val));
+                }}
+                placeholder="Enter dosage"
                 className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
                 min="1"
               />
@@ -213,18 +223,18 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
                     type="button"
                     key={slot}
                     onClick={() => toggleStandardSlot(slot)}
-                    className={`flex items-center gap-3 px-4 py-2.5 border rounded-xl transition-all text-sm font-medium ${
+                    className={`flex items-center gap-3 px-4 py-2.5 border rounded-xl transition-all duration-300 text-sm font-medium ${
                       isChecked
-                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 font-semibold'
+                        ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 font-semibold shadow-sm'
                         : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
-                    <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 ${
                       isChecked
-                        ? 'bg-indigo-600 border-indigo-600 text-white'
-                        : 'border-slate-300 dark:border-slate-600'
+                        ? 'bg-blue-600 border-blue-600 text-white scale-105 shadow-sm shadow-blue-500/10'
+                        : 'border-slate-300 dark:border-slate-600 bg-transparent'
                     }`}>
-                      {isChecked && <X size={10} strokeWidth={3} />}
+                      {isChecked && <Check size={11} strokeWidth={3} className="animate-scale-in" />}
                     </div>
                     <span>{slot} <span className="text-[10px] opacity-60">({hindiSlot})</span></span>
                   </button>
@@ -241,8 +251,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
             
             <div className="flex gap-2">
               <input
-                type="text"
-                placeholder="e.g. 08:00 AM, 2:30 PM"
+                type="time"
                 value={newCustomSlot}
                 onChange={(e) => setNewCustomSlot(e.target.value)}
                 className="flex-1 px-4 py-2 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
