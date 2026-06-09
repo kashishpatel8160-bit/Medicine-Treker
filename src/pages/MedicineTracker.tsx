@@ -18,8 +18,7 @@ import {
 import { Link } from 'react-router-dom';
 
 export default function MedicineTracker() {
-  const { user } = useAuth();
-  const { medicines, removeMedicine, markTaken, loading } = useMedicines();
+  const { removeMedicine, markTaken, loading } = useMedicines();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicineToEdit, setMedicineToEdit] = useState<Medicine | null>(null);
 
