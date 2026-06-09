@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useMedicines } from '../contexts/MedicineContext';
 import MedicineFormModal from '../components/MedicineFormModal';
 import { Medicine } from '../types';
@@ -18,7 +17,7 @@ import {
 import { Link } from 'react-router-dom';
 
 export default function MedicineTracker() {
-  const { removeMedicine, markTaken, loading } = useMedicines();
+  const { medicines, removeMedicine, markTaken, loading } = useMedicines();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicineToEdit, setMedicineToEdit] = useState<Medicine | null>(null);
 
