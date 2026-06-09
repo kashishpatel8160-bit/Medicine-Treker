@@ -1,57 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { Medicine, Language, TranslationDict } from '../types';
-import { X, Plus, Check } from 'lucide-react';
+import { Medicine, ScheduleType, Language, TranslationDict } from '../types';
+import { X } from 'lucide-react';
+import { PrescriptionUpload } from './PrescriptionUpload';
 
 interface MedicineFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (medicine: Omit<Medicine, 'id' | 'createdAt' | 'refills' | 'logs'> & { id?: string }) => void;
+  onSave: (medicine: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity'>) => void;
   editMedicine?: Medicine | null;
-  language: Language;
-  t: TranslationDict;
+  language?: Language;
+  t?: TranslationDict;
 }
-
-const DEFAULT_SCHEDULES = ['Morning', 'Afternoon', 'Evening', 'Night'];
 
 export const MedicineForm: React.FC<MedicineFormProps> = ({
   isOpen,
   onClose,
   onSave,
-  editMedicine,
-  t
+  editMedicine
 }) => {
   const [name, setName] = useState('');
-  const [totalTablets, setTotalTablets] = useState<number | ''>('');
-  const [dosagePerTime, setDosagePerTime] = useState<number | ''>('');
-  const [selectedStandardSlots, setSelectedStandardSlots] = useState<string[]>([]);
-  const [customSlots, setCustomSlots] = useState<string[]>([]);
-  const [newCustomSlot, setNewCustomSlot] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toLocaleDateString('en-CA'));
+  const [dosage, setDosage] = useState('');
+  const [quantity, setQuantity] = useState<number | ''>('');
+  const [lowStockThreshold, setLowStockThreshold] = useState<number | ''>(10);
+  const [scheduleType, setScheduleType] = useState<ScheduleType>('daily');
+  const [scheduleDays, setScheduleDays] = useState('');
+  const [frequency, setFrequency] = useState('Morning');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
-  // Prefill when editing
+  // Calculate estimated days
+  const [estimatedDays, setEstimatedDays] = useState(0);
+
+  useEffect(() => {
+    if (quantity && quantity > 0) {
+      let dosesPerDay = 1;
+      const freqMultiplier = frequency.split(',').length; // very rough heuristic
+      
+      if (scheduleType === 'daily') dosesPerDay = 1 * freqMultiplier;
+      else if (scheduleType === 'twice_daily') dosesPerDay = 2;
+      else if (scheduleType === 'three_times_daily') dosesPerDay = 3;
+      else if (scheduleType === 'alternate_days') dosesPerDay = 0.5 * freqMultiplier;
+      else if (scheduleType === 'weekly') dosesPerDay = (1 / 7) * freqMultiplier * (scheduleDays.split(',').length || 1);
+      else if (scheduleType === 'monthly') dosesPerDay = (1 / 30) * freqMultiplier;
+      
+      const dosageNum = parseFloat(dosage) || 1;
+      const dailyTablets = dosesPerDay * dosageNum;
+      if (dailyTablets > 0) {
+        setEstimatedDays(Math.floor(Number(quantity) / dailyTablets));
+      } else {
+        setEstimatedDays(0);
+      }
+    } else {
+      setEstimatedDays(0);
+    }
+  }, [quantity, dosage, scheduleType, frequency, scheduleDays]);
+
   useEffect(() => {
     if (editMedicine) {
-      setName(editMedicine.name);
-      setTotalTablets(editMedicine.totalTablets);
-      setDosagePerTime(editMedicine.dosagePerTime);
-      setStartDate(editMedicine.startDate);
+      setName(editMedicine.medicine_name);
+      setDosage(editMedicine.dosage);
+      setQuantity(editMedicine.quantity);
+      setLowStockThreshold(editMedicine.low_stock_threshold);
+      setScheduleType(editMedicine.schedule_type);
+      setScheduleDays(editMedicine.schedule_days || '');
+      setFrequency(editMedicine.frequency);
+      setStartDate(editMedicine.start_date);
       setNotes(editMedicine.notes || '');
-      
-      const standards = editMedicine.schedule.filter(s => DEFAULT_SCHEDULES.includes(s));
-      const customs = editMedicine.schedule.filter(s => !DEFAULT_SCHEDULES.includes(s));
-      
-      setSelectedStandardSlots(standards);
-      setCustomSlots(customs);
     } else {
-      // Reset
       setName('');
-      setTotalTablets('');
-      setDosagePerTime('');
-      setSelectedStandardSlots(['Morning', 'Night']);
-      setCustomSlots([]);
-      setStartDate(new Date().toLocaleDateString('en-CA'));
+      setDosage('');
+      setQuantity('');
+      setLowStockThreshold(10);
+      setScheduleType('daily');
+      setScheduleDays('');
+      setFrequency('Morning');
+      setStartDate(new Date().toISOString().split('T')[0]);
       setNotes('');
     }
     setError('');
@@ -59,275 +83,215 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
 
   if (!isOpen) return null;
 
-  const toggleStandardSlot = (slot: string) => {
-    setSelectedStandardSlots(prev =>
-      prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
-    );
-  };
-
-  const addCustomSlot = () => {
-    const trimmed = newCustomSlot.trim();
-    if (!trimmed) return;
-    if (customSlots.includes(trimmed) || DEFAULT_SCHEDULES.includes(trimmed)) {
-      setError('Time slot already exists / समय स्लॉट पहले से मौजूद है');
-      return;
+  const handleExtractedText = (text: string) => {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+    if (lines.length > 0) {
+      setName(lines[0]);
     }
-    setCustomSlots(prev => [...prev, trimmed]);
-    setNewCustomSlot('');
-    setError('');
-  };
-
-  const removeCustomSlot = (slot: string) => {
-    setCustomSlots(prev => prev.filter(s => s !== slot));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
-      setError('Medicine name is required / दवा का नाम आवश्यक है');
+      setError('Medicine name is required');
       return;
     }
-
-    const parsedTotalTablets = typeof totalTablets === 'number' ? totalTablets : parseInt(totalTablets || '0');
-    if (!parsedTotalTablets || isNaN(parsedTotalTablets) || parsedTotalTablets <= 0) {
-      setError('Tablet count must be greater than 0 / गोलियों की संख्या 0 से अधिक होनी चाहिए');
+    if (!dosage.trim()) {
+      setError('Dosage is required (e.g., "1 tablet", "5ml")');
       return;
     }
-
-    const parsedDosagePerTime = typeof dosagePerTime === 'number' ? dosagePerTime : parseInt(dosagePerTime || '0');
-    if (!parsedDosagePerTime || isNaN(parsedDosagePerTime) || parsedDosagePerTime <= 0) {
-      setError('Dosage must be greater than 0 / खुराक 0 से अधिक होनी चाहिए');
-      return;
-    }
-
-    const combinedSchedule = [...selectedStandardSlots, ...customSlots];
-    if (combinedSchedule.length === 0) {
-      setError('Select at least one schedule time / कम से कम एक खुराक का समय चुनें');
+    if (!quantity || quantity <= 0) {
+      setError('Total quantity must be greater than 0');
       return;
     }
 
     onSave({
-      id: editMedicine?.id,
-      name: name.trim(),
-      totalTablets: parsedTotalTablets,
-      currentStock: editMedicine ? Math.min(parsedTotalTablets, editMedicine.currentStock) : parsedTotalTablets,
-      dosagePerTime: parsedDosagePerTime,
-      schedule: combinedSchedule,
-      startDate,
-      notes: notes.trim()
+      medicine_name: name.trim(),
+      dosage: dosage.trim(),
+      quantity: Number(quantity),
+      low_stock_threshold: Number(lowStockThreshold || 10),
+      schedule_type: scheduleType,
+      schedule_days: scheduleDays.trim(),
+      frequency: frequency.trim() || 'Morning',
+      start_date: startDate,
+      notes: notes.trim(),
     });
 
     onClose();
   };
 
-  // Dual English and Hindi labels helper
-  const renderLabel = (en: string, hi: string) => (
-    <span className="flex items-center gap-1">
-      <span className="font-medium text-slate-800 dark:text-slate-200">{en}</span>
-      <span className="text-xs text-slate-400 dark:text-slate-500">({hi})</span>
-    </span>
-  );
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editMedicine ? `${t.edit} - ${editMedicine.name}` : t.addNewMedicine}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="text-lg font-bold text-slate-900">
+            {editMedicine ? 'Edit Medicine' : 'Add New Medicine'}
           </h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-150 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+            className="p-1.5 rounded-full hover:bg-slate-200 text-slate-400 transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Form body */}
+        <div className="p-6 border-b border-slate-100">
+          <PrescriptionUpload onExtractedText={handleExtractedText} />
+        </div>
+
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           {error && (
-            <div className="p-3 text-xs bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border border-rose-100 dark:border-rose-950/40 rounded-xl">
+            <div className="p-3 text-xs bg-rose-50 text-rose-600 border border-rose-100 rounded-xl">
               {error}
             </div>
           )}
 
-          {/* Name */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {renderLabel('Medicine Name', 'दवा का नाम')}
-            </label>
+            <label className="block text-xs font-semibold uppercase text-slate-500">Medicine Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Paracetamol / पैरासिटामोल"
-              className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
-              autoFocus
+              placeholder="e.g. Paracetamol"
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
-          {/* Quantities Row */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Total Tablets */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                {renderLabel('Total Tablets', 'कुल गोलियाँ')}
-              </label>
+              <label className="block text-xs font-semibold uppercase text-slate-500">Dosage</label>
               <input
-                type="number"
-                value={totalTablets}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setTotalTablets(val === '' ? '' : parseInt(val));
-                }}
-                placeholder="Enter total tablets"
-                className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
-                min="1"
+                type="text"
+                value={dosage}
+                onChange={(e) => setDosage(e.target.value)}
+                placeholder="e.g. 1 tablet"
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-
-            {/* Dosage per time */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                {renderLabel('Dosage Each Time', 'एक बार की खुराक')}
-              </label>
+              <label className="block text-xs font-semibold uppercase text-slate-500">Total Quantity</label>
               <input
                 type="number"
-                value={dosagePerTime}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setDosagePerTime(val === '' ? '' : parseInt(val));
-                }}
-                placeholder="Enter dosage"
-                className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))}
+                placeholder="e.g. 30"
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 min="1"
               />
             </div>
           </div>
 
-          {/* Schedule Checkbox list */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {renderLabel('Daily Dosage Schedule', 'दैनिक खुराक का समय')}
-            </label>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {DEFAULT_SCHEDULES.map((slot) => {
-                const isChecked = selectedStandardSlots.includes(slot);
-                const hindiSlot = slot === 'Morning' ? 'सुबह' : slot === 'Afternoon' ? 'दोपहर' : slot === 'Evening' ? 'शाम' : 'रात';
-                return (
-                  <button
-                    type="button"
-                    key={slot}
-                    onClick={() => toggleStandardSlot(slot)}
-                    className={`flex items-center gap-3 px-4 py-2.5 border rounded-xl transition-all duration-300 text-sm font-medium ${
-                      isChecked
-                        ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 font-semibold shadow-sm'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 ${
-                      isChecked
-                        ? 'bg-blue-600 border-blue-600 text-white scale-105 shadow-sm shadow-blue-500/10'
-                        : 'border-slate-300 dark:border-slate-600 bg-transparent'
-                    }`}>
-                      {isChecked && <Check size={11} strokeWidth={3} className="animate-scale-in" />}
-                    </div>
-                    <span>{slot} <span className="text-[10px] opacity-60">({hindiSlot})</span></span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Custom time slots */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {renderLabel('Or Add Custom Time', 'या कस्टम समय जोड़ें')}
-            </label>
-            
-            <div className="flex gap-2">
-              <input
-                type="time"
-                value={newCustomSlot}
-                onChange={(e) => setNewCustomSlot(e.target.value)}
-                className="flex-1 px-4 py-2 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
-              />
-              <button
-                type="button"
-                onClick={addCustomSlot}
-                className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-colors"
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold uppercase text-slate-500">Schedule Type</label>
+              <select
+                value={scheduleType}
+                onChange={(e) => setScheduleType(e.target.value as ScheduleType)}
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <Plus size={16} />
-              </button>
+                <option value="daily">Daily</option>
+                <option value="twice_daily">Twice Daily</option>
+                <option value="three_times_daily">Three times Daily</option>
+                <option value="alternate_days">Alternate Days</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="custom">Custom</option>
+              </select>
             </div>
-
-            {/* Custom slots pills list */}
-            {customSlots.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {customSlots.map((slot) => (
-                  <span
-                    key={slot}
-                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 rounded-full border border-indigo-100 dark:border-indigo-900/30"
-                  >
-                    {slot}
-                    <button
-                      type="button"
-                      onClick={() => removeCustomSlot(slot)}
-                      className="p-0.5 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900/60"
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
-                ))}
+            
+            {(scheduleType === 'weekly' || scheduleType === 'custom') ? (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold uppercase text-slate-500">Specific Days</label>
+                <input
+                  type="text"
+                  value={scheduleDays}
+                  onChange={(e) => setScheduleDays(e.target.value)}
+                  placeholder="e.g. Mon, Wed, Fri"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold uppercase text-slate-500">Frequency (Time)</label>
+                <input
+                  type="text"
+                  value={frequency}
+                  onChange={(e) => setFrequency(e.target.value)}
+                  placeholder="e.g. Morning, Night"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
             )}
           </div>
 
-          {/* Start Date */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {renderLabel('Start Date', 'शुरू करने की तिथि')}
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm"
-            />
+          {(scheduleType === 'weekly' || scheduleType === 'custom') && (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold uppercase text-slate-500">Frequency (Time)</label>
+              <input
+                type="text"
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value)}
+                placeholder="e.g. Morning, Night"
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold uppercase text-slate-500">Low Stock Alert at</label>
+              <input
+                type="number"
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(e.target.value === '' ? '' : parseInt(e.target.value))}
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                min="1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold uppercase text-slate-500">Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
 
-          {/* Notes */}
+          {estimatedDays > 0 && (
+            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex justify-between items-center">
+              <span className="text-sm font-medium text-indigo-800">Estimated duration:</span>
+              <span className="text-sm font-bold text-indigo-700">~{estimatedDays} days</span>
+            </div>
+          )}
+
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {renderLabel('Optional Notes', 'वैकल्पिक टिप्पणी')}
-            </label>
+            <label className="block text-xs font-semibold uppercase text-slate-500">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Take after food / भोजन के बाद लें"
-              className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white text-sm min-h-[70px] max-h-[140px]"
+              placeholder="e.g. Take after food"
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[70px]"
             />
           </div>
         </form>
 
-        {/* Footer buttons */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 flex gap-3">
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 border border-slate-255 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors"
+            className="flex-1 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
           >
-            {t.cancel}
+            Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-1 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl text-sm font-semibold hover:shadow-md hover:brightness-105 active:scale-98 transition-all"
+            className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-all"
           >
-            {t.save}
+            Save Medicine
           </button>
         </div>
       </div>

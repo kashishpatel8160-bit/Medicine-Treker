@@ -8,17 +8,26 @@ export interface DoseLog {
   timestamp: string; // ISO String
 }
 
+export type ScheduleType = 'daily' | 'twice_daily' | 'three_times_daily' | 'alternate_days' | 'weekly' | 'monthly' | 'custom';
+
 export interface Medicine {
   id: string;
-  name: string;
-  totalTablets: number;       // Initial/Reference stock capacity
-  currentStock: number;       // Remaining tablets in stock
-  dosagePerTime: number;      // Number of tablets/capsules taken each time
-  schedule: string[];         // Array of times: "Morning", "Night", or custom time strings
-  startDate: string;          // YYYY-MM-DD
+  user_id?: string;
+  medicine_name: string;
+  dosage: string;
+  quantity: number;
+  remaining_quantity: number;
+  frequency: string; 
+  schedule_type: ScheduleType;
+  schedule_days?: string;
+  start_date: string;
+  end_date?: string;
+  low_stock_threshold: number;
+  prescription_image?: string;
+  created_at: string;
+  updated_at: string;
   notes?: string;
-  logs: DoseLog[];
-  createdAt: string;
+  logs?: DoseLog[];
 }
 
 export type Language = 'en' | 'hi';

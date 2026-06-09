@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useMedicines } from '../contexts/MedicineContext';
-import MedicineFormModal from '../components/MedicineFormModal';
+import { OCRWizard } from '../components/OCRWizard';
+import { MultiMedicineForm } from '../components/MultiMedicineForm';
+import { MedicineForm } from '../components/MedicineForm';
 import { Medicine } from '../types';
 import { 
   ArrowLeft,
@@ -12,14 +14,20 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  FileImage
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function MedicineTracker() {
-  const { medicines, removeMedicine, markTaken, loading } = useMedicines();
+  const { medicines, removeMedicine, markTaken, loading, addMedicine, updateMedicine } = useMedicines();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicineToEdit, setMedicineToEdit] = useState<Medicine | null>(null);
+
+  // OCR Flow states
+  const [isOcrWizardOpen, setIsOcrWizardOpen] = useState(false);
+  const [isMultiFormOpen, setIsMultiFormOpen] = useState(false);
+  const [ocrExtractedNames, setOcrExtractedNames] = useState<string[]>([]);
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -43,10 +51,22 @@ export default function MedicineTracker() {
     await markTaken(medicine.id, timeSlot, status, todayStr);
   };
 
-  // Helper to check if a specific dose is taken today
   const getDoseStatusToday = (medicine: Medicine, timeSlot: string) => {
-    const log = medicine.logs.find(l => l.date === todayStr && l.timeSlot === timeSlot);
+    const log = medicine.logs?.find(l => l.date === todayStr && l.timeSlot === timeSlot);
     return log?.status; // 'taken', 'missed', or undefined
+  };
+
+  const handleSaveMedicine = async (medData: any) => {
+    try {
+      if (medicineToEdit) {
+        await updateMedicine(medicineToEdit.id, medData);
+      } else {
+        await addMedicine(medData);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save medicine');
+    }
   };
 
   return (
@@ -69,13 +89,22 @@ export default function MedicineTracker() {
               </div>
             </div>
             
-            <button 
-              onClick={handleAddNew}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow-sm hover:bg-indigo-700 transition-all text-sm"
-            >
-              <Plus size={16} />
-              <span className="hidden sm:inline">Add Medicine</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsOcrWizardOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-semibold shadow-sm hover:bg-indigo-50 transition-all text-sm"
+              >
+                <FileImage size={16} />
+                <span className="hidden sm:inline">Scan Prescription</span>
+              </button>
+              <button 
+                onClick={handleAddNew}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow-sm hover:bg-indigo-700 transition-all text-sm"
+              >
+                <Plus size={16} />
+                <span className="hidden sm:inline">Add Manually</span>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -125,9 +154,9 @@ export default function MedicineTracker() {
                       <Pill size={24} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg text-slate-800 leading-tight">{medicine.name}</h3>
+                      <h3 className="font-bold text-lg text-slate-800 leading-tight">{medicine.medicine_name}</h3>
                       <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-                        <Clock size={14} /> {medicine.dosagePerTime} tablet(s) per dose
+                        <Clock size={14} /> {medicine.dosage} per dose
                       </p>
                     </div>
                   </div>
@@ -152,11 +181,12 @@ export default function MedicineTracker() {
                 {/* Card Body - Schedule */}
                 <div className="p-5 flex-1">
                   <h4 className="text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Calendar size={14} className="text-slate-400" /> Today's Schedule
+                    <Calendar size={14} className="text-slate-400" /> Schedule: {medicine.schedule_type.replace('_', ' ')}
                   </h4>
                   
                   <div className="space-y-3">
-                    {medicine.schedule.map((time, idx) => {
+                    {/* For simplicity, map frequency to a single slot. If multiple, we split by comma. */}
+                    {medicine.frequency.split(',').map(f => f.trim()).map((time, idx) => {
                       const status = getDoseStatusToday(medicine, time);
                       
                       return (
@@ -198,17 +228,17 @@ export default function MedicineTracker() {
                 {/* Card Footer - Stock info */}
                 <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
-                    {medicine.currentStock <= medicine.dosagePerTime * 3 ? (
+                    {medicine.remaining_quantity <= medicine.low_stock_threshold ? (
                       <AlertCircle size={16} className="text-amber-500" />
                     ) : (
                       <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                     )}
-                    <span className={medicine.currentStock <= medicine.dosagePerTime * 3 ? "text-amber-600 font-semibold" : "text-slate-600 font-medium"}>
-                      {medicine.currentStock} tablets remaining
+                    <span className={medicine.remaining_quantity <= medicine.low_stock_threshold ? "text-amber-600 font-semibold" : "text-slate-600 font-medium"}>
+                      {medicine.remaining_quantity} remaining
                     </span>
                   </div>
                   <span className="text-xs text-slate-400">
-                    Started {new Date(medicine.startDate).toLocaleDateString()}
+                    Started {new Date(medicine.start_date).toLocaleDateString()}
                   </span>
                 </div>
                 
@@ -218,10 +248,38 @@ export default function MedicineTracker() {
         )}
       </main>
 
-      <MedicineFormModal 
+      {/* OCR Flow States */}
+      {isOcrWizardOpen && (
+        <OCRWizard 
+          onClose={() => setIsOcrWizardOpen(false)}
+          onConfirm={(names) => {
+            setOcrExtractedNames(names);
+            setIsOcrWizardOpen(false);
+            setIsMultiFormOpen(true);
+          }}
+        />
+      )}
+
+      {isMultiFormOpen && (
+        <MultiMedicineForm
+          initialNames={ocrExtractedNames}
+          onClose={() => {
+            setIsMultiFormOpen(false);
+            setOcrExtractedNames([]);
+          }}
+          onSaveAll={async (medicinesList) => {
+            for (const med of medicinesList) {
+              await addMedicine(med);
+            }
+          }}
+        />
+      )}
+
+      <MedicineForm
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        medicineToEdit={medicineToEdit} 
+        onSave={handleSaveMedicine}
+        editMedicine={medicineToEdit} 
       />
     </div>
   );
