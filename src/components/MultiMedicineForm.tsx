@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScheduleType } from '../types';
-import { X, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, CheckCircle, Plus, Sunrise, Sun, Moon } from 'lucide-react';
 
 interface MultiMedicineFormProps {
   initialNames: string[];
@@ -29,6 +29,21 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
 
   const updateMedicine = (id: string, field: string, value: any) => {
     setMedicines(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
+
+  const handleTimeSlotToggle = (id: string, slot: string) => {
+    setMedicines(prev => prev.map(m => {
+      if (m.id !== id) return m;
+      let slots = m.frequency ? m.frequency.split(',').map(s => s.trim()).filter(Boolean) : [];
+      if (slots.includes(slot)) {
+        slots = slots.filter(s => s !== slot);
+      } else {
+        slots.push(slot);
+        const order = ['Morning', 'Day/Afternoon', 'Night'];
+        slots.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      }
+      return { ...m, frequency: slots.join(', ') };
+    }));
   };
 
   const removeMedicine = (id: string) => {
@@ -121,9 +136,9 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="block text-xs font-semibold uppercase text-slate-500">Schedule</label>
+                          <label className="block text-xs font-semibold uppercase text-slate-500">Schedule Type</label>
                           <select
                             value={med.schedule_type}
                             onChange={(e) => updateMedicine(med.id, 'schedule_type', e.target.value)}
@@ -151,16 +166,30 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
                             />
                           </div>
                         )}
-                        
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-semibold uppercase text-slate-500">Frequency (Time)</label>
-                          <input
-                            type="text"
-                            value={med.frequency}
-                            onChange={(e) => updateMedicine(med.id, 'frequency', e.target.value)}
-                            placeholder="e.g. Morning"
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-xs font-semibold uppercase text-slate-500">Time Slots</label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {[
+                            { id: 'Morning', label: 'Morning', icon: Sunrise },
+                            { id: 'Day/Afternoon', label: 'Day/Afternoon', icon: Sun },
+                            { id: 'Night', label: 'Night', icon: Moon }
+                          ].map(slot => {
+                            const Icon = slot.icon;
+                            const isSelected = med.frequency.split(',').map(s => s.trim()).includes(slot.id);
+                            return (
+                              <button
+                                key={slot.id}
+                                type="button"
+                                onClick={() => handleTimeSlotToggle(med.id, slot.id)}
+                                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${isSelected ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+                              >
+                                <Icon size={20} className={isSelected ? 'text-indigo-600' : 'text-slate-400'} />
+                                <span className="text-sm font-semibold">{slot.label}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 

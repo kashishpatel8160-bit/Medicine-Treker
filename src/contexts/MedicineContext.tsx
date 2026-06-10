@@ -95,7 +95,26 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchMedicines();
-  }, [fetchMedicines]);
+
+    if (!user) return;
+
+    const channel = supabase.channel('db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'medicines', filter: `user_id=eq.${user.id}` },
+        () => { fetchMedicines(); }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'dose_logs' },
+        () => { fetchMedicines(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchMedicines, user]);
 
   const addMedicine = async (med: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity'>) => {
     if (!user) return;

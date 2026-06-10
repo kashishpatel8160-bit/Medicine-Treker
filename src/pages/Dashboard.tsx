@@ -14,7 +14,10 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  FileText
+  FileText,
+  Sunrise,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -237,9 +240,30 @@ export default function Dashboard() {
                           <div className="space-y-2 mt-3 pl-13">
                             {frequencySlots.map((time, idx) => {
                               const status = getDoseStatusToday(med, time);
+                              let TimeIcon = Clock;
+                              let bgClass = "bg-white";
+                              let iconClass = "text-slate-400";
+                              
+                              if (time === 'Morning') {
+                                TimeIcon = Sunrise;
+                                bgClass = "bg-amber-50/50";
+                                iconClass = "text-amber-500";
+                              } else if (time === 'Day/Afternoon') {
+                                TimeIcon = Sun;
+                                bgClass = "bg-sky-50/50";
+                                iconClass = "text-sky-500";
+                              } else if (time === 'Night') {
+                                TimeIcon = Moon;
+                                bgClass = "bg-indigo-50/50";
+                                iconClass = "text-indigo-500";
+                              }
+
                               return (
-                                <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
-                                  <span className="font-semibold text-slate-700">{time}</span>
+                                <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border border-slate-100 shadow-sm ${bgClass}`}>
+                                  <div className="flex items-center gap-2">
+                                    <TimeIcon size={18} className={iconClass} />
+                                    <span className="font-semibold text-slate-700">{time}</span>
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     {status === 'taken' ? (
                                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-semibold">

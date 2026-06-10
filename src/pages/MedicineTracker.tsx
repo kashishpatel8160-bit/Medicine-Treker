@@ -15,7 +15,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  FileImage
+  FileImage,
+  Sunrise,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -188,10 +191,30 @@ export default function MedicineTracker() {
                     {/* For simplicity, map frequency to a single slot. If multiple, we split by comma. */}
                     {medicine.frequency.split(',').map(f => f.trim()).map((time, idx) => {
                       const status = getDoseStatusToday(medicine, time);
+                      let TimeIcon = Clock;
+                      let bgClass = "bg-white";
+                      let iconClass = "text-slate-400";
+                      
+                      if (time === 'Morning') {
+                        TimeIcon = Sunrise;
+                        bgClass = "bg-amber-50/50";
+                        iconClass = "text-amber-500";
+                      } else if (time === 'Day/Afternoon') {
+                        TimeIcon = Sun;
+                        bgClass = "bg-sky-50/50";
+                        iconClass = "text-sky-500";
+                      } else if (time === 'Night') {
+                        TimeIcon = Moon;
+                        bgClass = "bg-indigo-50/50";
+                        iconClass = "text-indigo-500";
+                      }
                       
                       return (
-                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
-                          <span className="font-semibold text-slate-700">{time}</span>
+                        <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border border-slate-100 shadow-sm ${bgClass}`}>
+                          <div className="flex items-center gap-2">
+                            <TimeIcon size={18} className={iconClass} />
+                            <span className="font-semibold text-slate-700">{time}</span>
+                          </div>
                           
                           <div className="flex items-center gap-2">
                             {status === 'taken' ? (

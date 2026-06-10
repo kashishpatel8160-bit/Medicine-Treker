@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Medicine, ScheduleType, Language, TranslationDict } from '../types';
-import { X } from 'lucide-react';
+import { X, Sunrise, Sun, Moon } from 'lucide-react';
 import { PrescriptionUpload } from './PrescriptionUpload';
 
 interface MedicineFormProps {
@@ -28,6 +28,18 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+
+  const handleTimeSlotToggle = (slot: string) => {
+    let slots = frequency ? frequency.split(',').map(s => s.trim()).filter(Boolean) : [];
+    if (slots.includes(slot)) {
+      slots = slots.filter(s => s !== slot);
+    } else {
+      slots.push(slot);
+      const order = ['Morning', 'Day/Afternoon', 'Night'];
+      slots.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    }
+    setFrequency(slots.join(', '));
+  };
 
   // Calculate estimated days
   const [estimatedDays, setEstimatedDays] = useState(0);
@@ -201,7 +213,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
               </select>
             </div>
             
-            {(scheduleType === 'weekly' || scheduleType === 'custom') ? (
+            {(scheduleType === 'weekly' || scheduleType === 'custom') && (
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold uppercase text-slate-500">Specific Days</label>
                 <input
@@ -212,32 +224,33 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
-            ) : (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase text-slate-500">Frequency (Time)</label>
-                <input
-                  type="text"
-                  value={frequency}
-                  onChange={(e) => setFrequency(e.target.value)}
-                  placeholder="e.g. Morning, Night"
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
             )}
           </div>
 
-          {(scheduleType === 'weekly' || scheduleType === 'custom') && (
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase text-slate-500">Frequency (Time)</label>
-              <input
-                type="text"
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value)}
-                placeholder="e.g. Morning, Night"
-                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase text-slate-500">Time Slots</label>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: 'Morning', label: 'Morning', icon: Sunrise },
+                { id: 'Day/Afternoon', label: 'Day/Afternoon', icon: Sun },
+                { id: 'Night', label: 'Night', icon: Moon }
+              ].map(slot => {
+                const Icon = slot.icon;
+                const isSelected = frequency.split(',').map(s => s.trim()).includes(slot.id);
+                return (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    onClick={() => handleTimeSlotToggle(slot.id)}
+                    className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${isSelected ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <Icon size={20} className={isSelected ? 'text-indigo-600' : 'text-slate-400'} />
+                    <span className="text-sm font-semibold">{slot.label}</span>
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
