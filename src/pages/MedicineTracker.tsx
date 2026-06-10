@@ -23,7 +23,7 @@ import {
 import { Link } from 'react-router-dom';
 
 export default function MedicineTracker() {
-  const { medicines, removeMedicine, markTaken, loading, addMedicine, updateMedicine } = useMedicines();
+  const { medicines, removeMedicine, markTaken, loading, addMedicine, updateMedicine, syncError } = useMedicines();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicineToEdit, setMedicineToEdit] = useState<Medicine | null>(null);
 
@@ -114,6 +114,16 @@ export default function MedicineTracker() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
         
+        {syncError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
+            <AlertCircle className="shrink-0" size={20} />
+            <div>
+              <p className="font-bold text-sm">Sync Error</p>
+              <p className="text-sm">{syncError}</p>
+            </div>
+          </div>
+        )}
+
         {/* Header Section */}
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">

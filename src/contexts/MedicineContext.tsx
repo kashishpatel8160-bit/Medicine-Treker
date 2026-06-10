@@ -13,6 +13,7 @@ interface MedicineContextType {
   markTaken: (id: string, timeSlot: string, status: 'taken' | 'missed', dateStr: string) => Promise<void>;
   removeDoseLog: (id: string, logId: string) => Promise<void>;
   refreshMedicines: () => Promise<void>;
+  syncError: string | null;
 }
 
 const MedicineContext = createContext<MedicineContextType | undefined>(undefined);
@@ -22,6 +23,7 @@ const LOCAL_STORAGE_KEY = 'healthsync_medicines_fallback';
 export function MedicineProvider({ children }: { children: React.ReactNode }) {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const { user } = useAuth();
 
   // Helper to get local medicines
@@ -39,14 +41,69 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     setMedicines(meds);
   };
 
+  const migrateLocalData = async (userId: string) => {
+    const localMeds = getLocalMedicines();
+    if (localMeds.length === 0) return;
+    
+    let hasMigrated = false;
+    for (const med of localMeds) {
+      if (!med.user_id || med.user_id === userId) {
+        const payload = {
+          user_id: userId,
+          medicine_name: med.medicine_name,
+          dosage: med.dosage,
+          quantity: med.quantity,
+          remaining_quantity: med.remaining_quantity,
+          frequency: med.frequency,
+          schedule_type: med.schedule_type,
+          schedule_days: med.schedule_days,
+          start_date: med.start_date,
+          end_date: med.end_date,
+          low_stock_threshold: med.low_stock_threshold,
+          prescription_image: med.prescription_image,
+          notes: med.notes,
+          created_at: med.created_at || new Date().toISOString()
+        };
+        
+        try {
+          const { data: insertedMed, error: insertError } = await supabase.from('medicines').insert(payload).select().single();
+          if (insertError) throw insertError;
+          
+          if (med.logs && med.logs.length > 0 && insertedMed) {
+            const logsPayload = med.logs.map(l => ({
+              medicine_id: insertedMed.id,
+              date: l.date,
+              time_slot: l.timeSlot,
+              status: l.status,
+              tablets_taken: l.tabletsTaken,
+              timestamp: l.timestamp
+            }));
+            await supabase.from('dose_logs').insert(logsPayload);
+          }
+          hasMigrated = true;
+        } catch (err) {
+          console.error("Migration failed for med:", med.medicine_name, err);
+        }
+      }
+    }
+    
+    if (hasMigrated) {
+      saveLocalMedicines(localMeds.filter(m => m.user_id && m.user_id !== userId));
+    }
+  };
+
   const fetchMedicines = useCallback(async () => {
     if (!user) {
-      setMedicines([]);
+      setMedicines(getLocalMedicines());
+      setSyncError(null);
       return;
     }
     
     setLoading(true);
+    setSyncError(null);
     try {
+      await migrateLocalData(String(user.id));
+
       const { data: medsData, error: medsError } = await supabase
         .from('medicines')
         .select(`*, dose_logs (*)`)
@@ -82,12 +139,10 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
         }))
       }));
       setMedicines(normalized);
-    } catch (err) {
-      console.warn("Supabase fetch failed, falling back to local storage.", err);
-      // Fallback to local storage
-      const local = getLocalMedicines();
-      const userLocal = local.filter(m => m.user_id === user.id || !m.user_id);
-      setMedicines(userLocal);
+    } catch (err: any) {
+      console.warn("Supabase fetch failed, displaying sync error.", err);
+      setSyncError(err.message || 'Failed to sync with cloud database. You are offline.');
+      setMedicines(prev => prev.length > 0 ? prev : getLocalMedicines().filter(m => !m.user_id || m.user_id === user.id));
     } finally {
       setLoading(false);
     }
@@ -286,7 +341,8 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
         removeMedicine, 
         markTaken,
         removeDoseLog,
-        refreshMedicines: fetchMedicines
+        refreshMedicines: fetchMedicines,
+        syncError
       }}
     >
       {children}

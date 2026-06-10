@@ -23,7 +23,7 @@ import { format } from 'date-fns';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const { medicines, markTaken } = useMedicines();
+  const { medicines, markTaken, syncError } = useMedicines();
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
@@ -108,6 +108,16 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
+        {syncError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
+            <AlertTriangle className="shrink-0" size={20} />
+            <div>
+              <p className="font-bold text-sm">Sync Error</p>
+              <p className="text-sm">{syncError}</p>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
