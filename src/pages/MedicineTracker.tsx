@@ -266,7 +266,9 @@ export default function MedicineTracker() {
                         <AlertCircle size={16} className="text-amber-500" />
                         <span className="text-amber-600 font-semibold">Low Stock ({medicine.remaining_quantity} remaining)</span>
                         <button
-                          onClick={async () => {
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault();
                             if (window.confirm(`Are you sure you want to restock ${medicine.medicine_name} to the full quantity of ${medicine.quantity}?`)) {
                               await updateMedicine(medicine.id, { remaining_quantity: medicine.quantity });
                             }
