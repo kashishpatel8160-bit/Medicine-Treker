@@ -210,50 +210,57 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateMedicine = async (id: string, med: Partial<Medicine>) => {
-    if (!user) return;
     const target = medicines.find(m => m.id === id);
     if (!target) return;
     
-    try {
-      const payload: any = {};
-      if (med.medicine_name !== undefined) payload.medicine_name = med.medicine_name;
-      if (med.dosage !== undefined) payload.dosage = med.dosage;
-      if (med.quantity !== undefined) {
-        payload.quantity = med.quantity;
-        if (med.remaining_quantity === undefined) {
-          const diff = med.quantity - target.quantity;
-          payload.remaining_quantity = Math.max(0, target.remaining_quantity + diff);
-        }
-      }
-      if (med.remaining_quantity !== undefined) payload.remaining_quantity = med.remaining_quantity;
-      if (med.frequency !== undefined) payload.frequency = med.frequency;
-      if (med.schedule_type !== undefined) payload.schedule_type = med.schedule_type;
-      if (med.schedule_days !== undefined) payload.schedule_days = med.schedule_days;
-      if (med.start_date !== undefined) payload.start_date = med.start_date;
-      if (med.end_date !== undefined) payload.end_date = med.end_date;
-      if (med.low_stock_threshold !== undefined) payload.low_stock_threshold = med.low_stock_threshold;
-      if (med.prescription_image !== undefined) payload.prescription_image = med.prescription_image;
-      if (med.notes !== undefined) payload.notes = med.notes;
-      payload.updated_at = new Date().toISOString();
+    const updatedMedicineItem: Medicine = {
+      ...target,
+      ...med,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Recalculate remaining_quantity if quantity changed and remaining_quantity is not explicitly provided
+    if (med.quantity !== undefined && med.remaining_quantity === undefined) {
+      const diff = med.quantity - target.quantity;
+      updatedMedicineItem.remaining_quantity = Math.max(0, target.remaining_quantity + diff);
+    }
+    
+    // 1. Immediately update local state & localStorage to make the UI update instantly
+    const localMeds = getLocalMedicines();
+    const hasLocal = localMeds.some(m => m.id === id);
+    const newLocalMeds = hasLocal 
+      ? localMeds.map(m => m.id === id ? updatedMedicineItem : m)
+      : [updatedMedicineItem, ...localMeds];
+    
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newLocalMeds));
+    setMedicines(prev => prev.map(m => m.id === id ? updatedMedicineItem : m));
 
-      const { error } = await supabase.from('medicines').update(payload).eq('id', id).eq('user_id', user.id);
-      if (error) throw error;
-      await fetchMedicines();
-    } catch (err) {
-      console.warn("Supabase update failed, falling back to local storage.", err);
-      const local = getLocalMedicines();
-      const updatedLocal = local.map(m => {
-        if (m.id === id) {
-          const updated = { ...m, ...med };
-          if (med.quantity !== undefined && med.remaining_quantity === undefined) {
-            const diff = med.quantity - m.quantity;
-            updated.remaining_quantity = Math.max(0, m.remaining_quantity + diff);
-          }
-          return { ...updated, updated_at: new Date().toISOString() };
+    // 2. Sync to Supabase if user is logged in
+    if (user) {
+      try {
+        const payload: any = {};
+        if (med.medicine_name !== undefined) payload.medicine_name = med.medicine_name;
+        if (med.dosage !== undefined) payload.dosage = med.dosage;
+        if (med.quantity !== undefined) payload.quantity = med.quantity;
+        if (updatedMedicineItem.remaining_quantity !== undefined) {
+          payload.remaining_quantity = updatedMedicineItem.remaining_quantity;
         }
-        return m;
-      });
-      saveLocalMedicines(updatedLocal);
+        if (med.frequency !== undefined) payload.frequency = med.frequency;
+        if (med.schedule_type !== undefined) payload.schedule_type = med.schedule_type;
+        if (med.schedule_days !== undefined) payload.schedule_days = med.schedule_days;
+        if (med.start_date !== undefined) payload.start_date = med.start_date;
+        if (med.end_date !== undefined) payload.end_date = med.end_date;
+        if (med.low_stock_threshold !== undefined) payload.low_stock_threshold = med.low_stock_threshold;
+        if (med.prescription_image !== undefined) payload.prescription_image = med.prescription_image;
+        if (med.notes !== undefined) payload.notes = med.notes;
+        payload.updated_at = updatedMedicineItem.updated_at;
+
+        const { error } = await supabase.from('medicines').update(payload).eq('id', id).eq('user_id', user.id);
+        if (error) throw error;
+        await fetchMedicines();
+      } catch (err) {
+        console.warn("Supabase update failed, local state is already saved.", err);
+      }
     }
   };
 

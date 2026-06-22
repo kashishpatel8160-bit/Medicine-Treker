@@ -265,6 +265,16 @@ export default function MedicineTracker() {
                       <>
                         <AlertCircle size={16} className="text-amber-500" />
                         <span className="text-amber-600 font-semibold">Low Stock ({medicine.remaining_quantity} remaining)</span>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(`Are you sure you want to restock ${medicine.medicine_name} to the full quantity of ${medicine.quantity}?`)) {
+                              await updateMedicine(medicine.id, { remaining_quantity: medicine.quantity });
+                            }
+                          }}
+                          className="ml-2 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded-lg transition-colors border border-amber-200"
+                        >
+                          Restock
+                        </button>
                       </>
                     ) : (
                       <>

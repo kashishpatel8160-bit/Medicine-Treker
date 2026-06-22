@@ -6,7 +6,7 @@ import { PrescriptionUpload } from './PrescriptionUpload';
 interface MedicineFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (medicine: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity'>) => void;
+  onSave: (medicine: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity'> & { remaining_quantity?: number }) => void;
   editMedicine?: Medicine | null;
   language?: Language;
   t?: TranslationDict;
@@ -28,6 +28,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+  const [refillStock, setRefillStock] = useState(false);
 
   const handleTimeSlotToggle = (slot: string) => {
     let slots = frequency ? frequency.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -79,6 +80,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       setFrequency(editMedicine.frequency);
       setStartDate(editMedicine.start_date);
       setNotes(editMedicine.notes || '');
+      setRefillStock(editMedicine.remaining_quantity <= editMedicine.low_stock_threshold);
     } else {
       setName('');
       setDosage('');
@@ -89,6 +91,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       setFrequency('Morning');
       setStartDate(new Date().toISOString().split('T')[0]);
       setNotes('');
+      setRefillStock(false);
     }
     setError('');
   }, [editMedicine, isOpen]);
@@ -128,6 +131,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       frequency: frequency.trim() || 'Morning',
       start_date: startDate,
       notes: notes.trim(),
+      ...(editMedicine ? { remaining_quantity: refillStock ? Number(quantity) : editMedicine.remaining_quantity } : {})
     });
 
     onClose();
@@ -278,6 +282,21 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
             <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex justify-between items-center">
               <span className="text-sm font-medium text-indigo-800">Estimated duration:</span>
               <span className="text-sm font-bold text-indigo-700">~{estimatedDays} days</span>
+            </div>
+          )}
+
+          {editMedicine && (
+            <div className="flex items-center gap-2.5 p-3 bg-indigo-50/50 border border-indigo-100/80 rounded-xl">
+              <input
+                type="checkbox"
+                id="refillStock"
+                checked={refillStock}
+                onChange={(e) => setRefillStock(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+              />
+              <label htmlFor="refillStock" className="text-sm font-semibold text-slate-700 select-none cursor-pointer">
+                Refill remaining stock to match Total Quantity ({quantity} tablets)
+              </label>
             </div>
           )}
 
