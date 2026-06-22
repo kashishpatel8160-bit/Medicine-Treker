@@ -218,7 +218,13 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
       const payload: any = {};
       if (med.medicine_name !== undefined) payload.medicine_name = med.medicine_name;
       if (med.dosage !== undefined) payload.dosage = med.dosage;
-      if (med.quantity !== undefined) payload.quantity = med.quantity;
+      if (med.quantity !== undefined) {
+        payload.quantity = med.quantity;
+        if (med.remaining_quantity === undefined) {
+          const diff = med.quantity - target.quantity;
+          payload.remaining_quantity = Math.max(0, target.remaining_quantity + diff);
+        }
+      }
       if (med.remaining_quantity !== undefined) payload.remaining_quantity = med.remaining_quantity;
       if (med.frequency !== undefined) payload.frequency = med.frequency;
       if (med.schedule_type !== undefined) payload.schedule_type = med.schedule_type;
@@ -236,7 +242,17 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn("Supabase update failed, falling back to local storage.", err);
       const local = getLocalMedicines();
-      const updatedLocal = local.map(m => m.id === id ? { ...m, ...med, updated_at: new Date().toISOString() } : m);
+      const updatedLocal = local.map(m => {
+        if (m.id === id) {
+          const updated = { ...m, ...med };
+          if (med.quantity !== undefined && med.remaining_quantity === undefined) {
+            const diff = med.quantity - m.quantity;
+            updated.remaining_quantity = Math.max(0, m.remaining_quantity + diff);
+          }
+          return { ...updated, updated_at: new Date().toISOString() };
+        }
+        return m;
+      });
       saveLocalMedicines(updatedLocal);
     }
   };

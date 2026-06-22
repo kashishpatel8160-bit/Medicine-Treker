@@ -262,13 +262,16 @@ export default function MedicineTracker() {
                 <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
                     {medicine.remaining_quantity <= medicine.low_stock_threshold ? (
-                      <AlertCircle size={16} className="text-amber-500" />
+                      <>
+                        <AlertCircle size={16} className="text-amber-500" />
+                        <span className="text-amber-600 font-semibold">Low Stock ({medicine.remaining_quantity} remaining)</span>
+                      </>
                     ) : (
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                        <span className="text-emerald-600 font-semibold">In Stock ({medicine.remaining_quantity} remaining)</span>
+                      </>
                     )}
-                    <span className={medicine.remaining_quantity <= medicine.low_stock_threshold ? "text-amber-600 font-semibold" : "text-slate-600 font-medium"}>
-                      {medicine.remaining_quantity} remaining
-                    </span>
                   </div>
                   <span className="text-xs text-slate-400">
                     Started {new Date(medicine.start_date).toLocaleDateString()}
