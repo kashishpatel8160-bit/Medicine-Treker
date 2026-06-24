@@ -250,6 +250,7 @@ export default function Dashboard() {
                           <div className="space-y-2 mt-3 pl-13">
                             {frequencySlots.map((time, idx) => {
                               const status = getDoseStatusToday(med, time);
+                              const displayTime = time === 'Day/Afternoon' ? 'Afternoon' : time;
                               let TimeIcon = Clock;
                               let bgClass = "bg-white";
                               let iconClass = "text-slate-400";
@@ -258,7 +259,7 @@ export default function Dashboard() {
                                 TimeIcon = Sunrise;
                                 bgClass = "bg-amber-50/50";
                                 iconClass = "text-amber-500";
-                              } else if (time === 'Day/Afternoon') {
+                              } else if (time === 'Afternoon' || time === 'Day/Afternoon') {
                                 TimeIcon = Sun;
                                 bgClass = "bg-sky-50/50";
                                 iconClass = "text-sky-500";
@@ -272,7 +273,7 @@ export default function Dashboard() {
                                 <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border border-slate-100 shadow-sm ${bgClass}`}>
                                   <div className="flex items-center gap-2">
                                     <TimeIcon size={18} className={iconClass} />
-                                    <span className="font-semibold text-slate-700">{time}</span>
+                                    <span className="font-semibold text-slate-700">{displayTime}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     {status === 'taken' ? (

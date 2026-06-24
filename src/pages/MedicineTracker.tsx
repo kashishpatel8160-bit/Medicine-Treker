@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   Plus, 
   Pill, 
-  Calendar,
   Clock,
   Edit2,
   Trash2,
@@ -26,6 +25,7 @@ export default function MedicineTracker() {
   const { medicines, removeMedicine, markTaken, loading, addMedicine, updateMedicine, syncError } = useMedicines();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicineToEdit, setMedicineToEdit] = useState<Medicine | null>(null);
+  const [fixedFrequency, setFixedFrequency] = useState<string>('Morning');
 
   // OCR Flow states
   const [isOcrWizardOpen, setIsOcrWizardOpen] = useState(false);
@@ -36,11 +36,13 @@ export default function MedicineTracker() {
 
   const handleEdit = (medicine: Medicine) => {
     setMedicineToEdit(medicine);
+    setFixedFrequency(medicine.frequency);
     setIsModalOpen(true);
   };
 
-  const handleAddNew = () => {
+  const handleAddNew = (slot: string = 'Morning') => {
     setMedicineToEdit(null);
+    setFixedFrequency(slot);
     setIsModalOpen(true);
   };
 
@@ -101,7 +103,7 @@ export default function MedicineTracker() {
                 <span className="hidden sm:inline">Scan Prescription</span>
               </button>
               <button 
-                onClick={handleAddNew}
+                onClick={() => handleAddNew('Morning')}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow-sm hover:bg-indigo-700 transition-all text-sm"
               >
                 <Plus size={16} />
@@ -149,149 +151,79 @@ export default function MedicineTracker() {
               Keep track of your prescriptions, dosages, and daily schedules by adding your first medicine.
             </p>
             <button 
-              onClick={handleAddNew}
+              onClick={() => handleAddNew('Morning')}
               className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold shadow-sm hover:bg-indigo-700 transition-all"
             >
               Add Your First Medicine
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {medicines.map(medicine => (
-              <div key={medicine.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                
-                {/* Card Header */}
-                <div className="p-5 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                      <Pill size={24} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-slate-800 leading-tight">{medicine.medicine_name}</h3>
-                      <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-                        <Clock size={14} /> {medicine.dosage} per dose
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => handleEdit(medicine)}
-                      className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                      title="Edit"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(medicine.id)}
-                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Card Body - Schedule */}
-                <div className="p-5 flex-1">
-                  <h4 className="text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Calendar size={14} className="text-slate-400" /> Schedule: {medicine.schedule_type.replace('_', ' ')}
-                  </h4>
-                  
-                  <div className="space-y-3">
-                    {/* For simplicity, map frequency to a single slot. If multiple, we split by comma. */}
-                    {medicine.frequency.split(',').map(f => f.trim()).map((time, idx) => {
-                      const status = getDoseStatusToday(medicine, time);
-                      let TimeIcon = Clock;
-                      let bgClass = "bg-white";
-                      let iconClass = "text-slate-400";
-                      
-                      if (time === 'Morning') {
-                        TimeIcon = Sunrise;
-                        bgClass = "bg-amber-50/50";
-                        iconClass = "text-amber-500";
-                      } else if (time === 'Day/Afternoon') {
-                        TimeIcon = Sun;
-                        bgClass = "bg-sky-50/50";
-                        iconClass = "text-sky-500";
-                      } else if (time === 'Night') {
-                        TimeIcon = Moon;
-                        bgClass = "bg-indigo-50/50";
-                        iconClass = "text-indigo-500";
-                      }
-                      
-                      return (
-                        <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border border-slate-100 shadow-sm ${bgClass}`}>
-                          <div className="flex items-center gap-2">
-                            <TimeIcon size={18} className={iconClass} />
-                            <span className="font-semibold text-slate-700">{time}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            {status === 'taken' ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-semibold">
-                                <CheckCircle2 size={16} /> Taken
-                              </span>
-                            ) : status === 'missed' ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-semibold">
-                                <XCircle size={16} /> Missed
-                              </span>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <button 
-                                  onClick={() => handleMarkDose(medicine, time, 'taken')}
-                                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 border border-emerald-200"
-                                >
-                                  <CheckCircle2 size={14} /> Mark Taken
-                                </button>
-                                <button 
-                                  onClick={() => handleMarkDose(medicine, time, 'missed')}
-                                  className="px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-semibold transition-colors"
-                                >
-                                  Skip
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Card Footer - Stock info */}
-                <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    {medicine.remaining_quantity <= medicine.low_stock_threshold ? (
-                      <>
-                        <AlertCircle size={16} className="text-amber-500" />
-                        <span className="text-amber-600 font-semibold">Low Stock ({medicine.remaining_quantity} remaining)</span>
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            if (window.confirm(`Are you sure you want to restock ${medicine.medicine_name} to the full quantity of ${medicine.quantity}?`)) {
-                              await updateMedicine(medicine.id, { remaining_quantity: medicine.quantity });
-                            }
-                          }}
-                          className="ml-2 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded-lg transition-colors border border-amber-200"
-                        >
-                          Restock
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span className="text-emerald-600 font-semibold">In Stock ({medicine.remaining_quantity} remaining)</span>
-                      </>
-                    )}
-                  </div>
-                  <span className="text-xs text-slate-400">
-                    Started {new Date(medicine.start_date).toLocaleDateString()}
-                  </span>
-                </div>
-                
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Morning Section */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-5 border-b border-amber-100 bg-amber-50/50 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-amber-800 flex items-center gap-2">
+                  <Sunrise size={24} className="text-amber-500" />
+                  Morning
+                </h2>
+                <button onClick={() => handleAddNew('Morning')} className="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Add Morning Medicine">
+                  <Plus size={20} />
+                </button>
               </div>
-            ))}
+              <div className="p-4 flex-1 space-y-4 bg-slate-50">
+                {medicines.filter(m => m.frequency.includes('Morning')).length === 0 ? (
+                  <p className="text-center text-sm text-slate-400 py-8">No morning medicines</p>
+                ) : (
+                  medicines.filter(m => m.frequency.includes('Morning')).map(medicine => (
+                    <MedicineCard key={medicine.id} medicine={medicine} onEdit={() => handleEdit(medicine)} onDelete={() => handleDelete(medicine.id)} onMark={(status: 'taken' | 'missed') => handleMarkDose(medicine, 'Morning', status)} status={getDoseStatusToday(medicine, 'Morning')} onRestock={async () => await updateMedicine(medicine.id, { remaining_quantity: medicine.quantity })} />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Afternoon Section */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-5 border-b border-sky-100 bg-sky-50/50 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-sky-800 flex items-center gap-2">
+                  <Sun size={24} className="text-sky-500" />
+                  Afternoon
+                </h2>
+                <button onClick={() => handleAddNew('Afternoon')} className="p-2 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="Add Afternoon Medicine">
+                  <Plus size={20} />
+                </button>
+              </div>
+              <div className="p-4 flex-1 space-y-4 bg-slate-50">
+                {medicines.filter(m => m.frequency.includes('Afternoon') || m.frequency.includes('Day/Afternoon')).length === 0 ? (
+                  <p className="text-center text-sm text-slate-400 py-8">No afternoon medicines</p>
+                ) : (
+                  medicines.filter(m => m.frequency.includes('Afternoon') || m.frequency.includes('Day/Afternoon')).map(medicine => (
+                    <MedicineCard key={medicine.id} medicine={medicine} onEdit={() => handleEdit(medicine)} onDelete={() => handleDelete(medicine.id)} onMark={(status: 'taken' | 'missed') => handleMarkDose(medicine, 'Afternoon', status)} status={getDoseStatusToday(medicine, 'Afternoon')} onRestock={async () => await updateMedicine(medicine.id, { remaining_quantity: medicine.quantity })} />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Night Section */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-5 border-b border-indigo-100 bg-indigo-50/50 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-indigo-800 flex items-center gap-2">
+                  <Moon size={24} className="text-indigo-500" />
+                  Night
+                </h2>
+                <button onClick={() => handleAddNew('Night')} className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors" title="Add Night Medicine">
+                  <Plus size={20} />
+                </button>
+              </div>
+              <div className="p-4 flex-1 space-y-4 bg-slate-50">
+                {medicines.filter(m => m.frequency.includes('Night')).length === 0 ? (
+                  <p className="text-center text-sm text-slate-400 py-8">No night medicines</p>
+                ) : (
+                  medicines.filter(m => m.frequency.includes('Night')).map(medicine => (
+                    <MedicineCard key={medicine.id} medicine={medicine} onEdit={() => handleEdit(medicine)} onDelete={() => handleDelete(medicine.id)} onMark={(status: 'taken' | 'missed') => handleMarkDose(medicine, 'Night', status)} status={getDoseStatusToday(medicine, 'Night')} onRestock={async () => await updateMedicine(medicine.id, { remaining_quantity: medicine.quantity })} />
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>
@@ -328,7 +260,78 @@ export default function MedicineTracker() {
         onClose={() => setIsModalOpen(false)} 
         onSave={handleSaveMedicine}
         editMedicine={medicineToEdit} 
+        fixedFrequency={fixedFrequency}
       />
+    </div>
+  );
+}
+
+function MedicineCard({ medicine, onEdit, onDelete, onMark, status, onRestock }: any) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-slate-100 flex justify-between items-start">
+        <div className="flex gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Pill size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800 leading-tight">{medicine.medicine_name}</h3>
+            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <Clock size={12} /> {medicine.dosage}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={onEdit} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit">
+            <Edit2 size={14} />
+          </button>
+          <button onClick={onDelete} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+      <div className="p-4 flex-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {status === 'taken' ? (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-semibold">
+                <CheckCircle2 size={14} /> Taken
+              </span>
+            ) : status === 'missed' ? (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
+                <XCircle size={14} /> Missed
+              </span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => onMark('taken')} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 border border-emerald-200">
+                  <CheckCircle2 size={12} /> Take
+                </button>
+                <button onClick={() => onMark('missed')} className="px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg text-xs font-semibold transition-colors">
+                  Skip
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs">
+          {medicine.remaining_quantity <= medicine.low_stock_threshold ? (
+            <>
+              <AlertCircle size={14} className="text-amber-500" />
+              <span className="text-amber-600 font-semibold">Low ({medicine.remaining_quantity})</span>
+              <button onClick={(e) => { e.preventDefault(); if (window.confirm('Restock?')) onRestock(); }} className="ml-1 text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-2 py-0.5 rounded transition-colors border border-amber-200">
+                Restock
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+              <span className="text-emerald-600 font-semibold">In Stock ({medicine.remaining_quantity})</span>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
