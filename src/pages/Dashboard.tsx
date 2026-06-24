@@ -175,7 +175,7 @@ export default function Dashboard() {
       {isOcrWizardOpen && (
         <OCWizardFlow 
           onClose={() => setIsOcrWizardOpen(false)}
-          onConfirm={(names) => {
+          onConfirm={(names: string[]) => {
             setOcrExtractedNames(names);
             setIsOcrWizardOpen(false);
             setIsMultiFormOpen(true);

@@ -69,9 +69,12 @@ export function TodaysSchedule({ schedule, onMarkAllTaken, onToggleIndividual }:
               </div>
               
               <div className="w-3/12 flex justify-center">
-                <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold ${getStatusStyles(item.status)}`}>
+                <button 
+                  onClick={() => onToggleIndividual(item.med, item.timeSlot, item.log?.id)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-transform hover:scale-105 active:scale-95 ${getStatusStyles(item.status)}`}
+                >
                   {item.status}
-                </span>
+                </button>
               </div>
 
               <div className="w-4/12 flex justify-end items-center gap-6">
