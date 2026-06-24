@@ -17,7 +17,7 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
       quantity: 30,
       low_stock_threshold: 10,
       schedule_type: 'daily' as ScheduleType,
-      frequency: 'Morning',
+      frequency: 'Morning, Afternoon, Night',
       schedule_days: '',
       start_date: new Date().toISOString().split('T')[0],
       notes: ''
@@ -198,7 +198,7 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
               quantity: 30,
               low_stock_threshold: 10,
               schedule_type: 'daily',
-              frequency: 'Morning',
+              frequency: 'Morning, Afternoon, Night',
               schedule_days: '',
               start_date: new Date().toISOString().split('T')[0],
               notes: ''

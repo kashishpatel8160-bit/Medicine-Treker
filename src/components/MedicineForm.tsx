@@ -8,7 +8,6 @@ interface MedicineFormProps {
   onClose: () => void;
   onSave: (medicine: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity'> & { remaining_quantity?: number }) => void;
   editMedicine?: Medicine | null;
-  fixedFrequency?: string;
   language?: Language;
   t?: TranslationDict;
 }
@@ -17,8 +16,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
   isOpen,
   onClose,
   onSave,
-  editMedicine,
-  fixedFrequency
+  editMedicine
 }) => {
   const [name, setName] = useState('');
   const [dosage, setDosage] = useState('');
@@ -26,7 +24,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
   const [lowStockThreshold, setLowStockThreshold] = useState<number | ''>(10);
   const [scheduleType, setScheduleType] = useState<ScheduleType>('daily');
   const [scheduleDays, setScheduleDays] = useState('');
-  const [frequency, setFrequency] = useState(fixedFrequency || 'Morning');
+  const frequency = 'Morning, Afternoon, Night';
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
@@ -57,7 +55,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
     } else {
       setEstimatedDays(0);
     }
-  }, [quantity, dosage, scheduleType, frequency, scheduleDays]);
+  }, [quantity, dosage, scheduleType, scheduleDays]);
 
   useEffect(() => {
     if (editMedicine) {
@@ -67,8 +65,6 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       setLowStockThreshold(editMedicine.low_stock_threshold);
       setScheduleType(editMedicine.schedule_type);
       setScheduleDays(editMedicine.schedule_days || '');
-      // When editing, keep the original frequency but map Day/Afternoon to Afternoon
-      setFrequency(editMedicine.frequency.replace('Day/Afternoon', 'Afternoon'));
       setStartDate(editMedicine.start_date);
       setNotes(editMedicine.notes || '');
       setRefillStock(editMedicine.remaining_quantity <= editMedicine.low_stock_threshold);
@@ -79,13 +75,12 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       setLowStockThreshold(10);
       setScheduleType('daily');
       setScheduleDays('');
-      setFrequency(fixedFrequency || 'Morning');
       setStartDate(new Date().toISOString().split('T')[0]);
       setNotes('');
       setRefillStock(false);
     }
     setError('');
-  }, [editMedicine, fixedFrequency, isOpen]);
+  }, [editMedicine, isOpen]);
 
   if (!isOpen) return null;
 
@@ -119,7 +114,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       low_stock_threshold: Number(lowStockThreshold || 10),
       schedule_type: scheduleType,
       schedule_days: scheduleDays.trim(),
-      frequency: frequency.trim() || 'Morning',
+      frequency: 'Morning, Afternoon, Night',
       start_date: startDate,
       notes: notes.trim(),
       ...(editMedicine ? { remaining_quantity: refillStock ? Number(quantity) : editMedicine.remaining_quantity } : {})

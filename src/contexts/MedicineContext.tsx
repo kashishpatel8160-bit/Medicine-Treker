@@ -30,7 +30,11 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
   const getLocalMedicines = (): Medicine[] => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const parsed = stored ? JSON.parse(stored) : [];
+      return parsed.map((m: any) => ({
+        ...m,
+        frequency: 'Morning, Afternoon, Night'
+      }));
     } catch {
       return [];
     }
@@ -54,7 +58,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
           dosage: med.dosage,
           quantity: med.quantity,
           remaining_quantity: med.remaining_quantity,
-          frequency: med.frequency,
+          frequency: 'Morning, Afternoon, Night',
           schedule_type: med.schedule_type,
           schedule_days: med.schedule_days,
           start_date: med.start_date,
@@ -119,7 +123,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
         dosage: med.dosage,
         quantity: med.quantity,
         remaining_quantity: med.remaining_quantity,
-        frequency: med.frequency,
+        frequency: 'Morning, Afternoon, Night',
         schedule_type: med.schedule_type,
         schedule_days: med.schedule_days,
         start_date: med.start_date,
@@ -181,7 +185,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
       dosage: med.dosage,
       quantity: med.quantity,
       remaining_quantity: med.quantity, // starts full
-      frequency: med.frequency,
+      frequency: 'Morning, Afternoon, Night',
       schedule_type: med.schedule_type,
       schedule_days: med.schedule_days,
       start_date: med.start_date,
@@ -216,6 +220,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     const updatedMedicineItem: Medicine = {
       ...target,
       ...med,
+      frequency: 'Morning, Afternoon, Night',
       updated_at: new Date().toISOString()
     };
     
@@ -245,7 +250,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
         if (updatedMedicineItem.remaining_quantity !== undefined) {
           payload.remaining_quantity = updatedMedicineItem.remaining_quantity;
         }
-        if (med.frequency !== undefined) payload.frequency = med.frequency;
+        payload.frequency = 'Morning, Afternoon, Night';
         if (med.schedule_type !== undefined) payload.schedule_type = med.schedule_type;
         if (med.schedule_days !== undefined) payload.schedule_days = med.schedule_days;
         if (med.start_date !== undefined) payload.start_date = med.start_date;

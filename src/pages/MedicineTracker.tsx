@@ -25,7 +25,6 @@ export default function MedicineTracker() {
   const { medicines, removeMedicine, markTaken, loading, addMedicine, updateMedicine, syncError } = useMedicines();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicineToEdit, setMedicineToEdit] = useState<Medicine | null>(null);
-  const [fixedFrequency, setFixedFrequency] = useState<string>('Morning');
 
   // OCR Flow states
   const [isOcrWizardOpen, setIsOcrWizardOpen] = useState(false);
@@ -36,13 +35,11 @@ export default function MedicineTracker() {
 
   const handleEdit = (medicine: Medicine) => {
     setMedicineToEdit(medicine);
-    setFixedFrequency(medicine.frequency);
     setIsModalOpen(true);
   };
 
-  const handleAddNew = (slot: string = 'Morning') => {
+  const handleAddNew = () => {
     setMedicineToEdit(null);
-    setFixedFrequency(slot);
     setIsModalOpen(true);
   };
 
@@ -103,7 +100,7 @@ export default function MedicineTracker() {
                 <span className="hidden sm:inline">Scan Prescription</span>
               </button>
               <button 
-                onClick={() => handleAddNew('Morning')}
+                onClick={handleAddNew}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow-sm hover:bg-indigo-700 transition-all text-sm"
               >
                 <Plus size={16} />
@@ -151,7 +148,7 @@ export default function MedicineTracker() {
               Keep track of your prescriptions, dosages, and daily schedules by adding your first medicine.
             </p>
             <button 
-              onClick={() => handleAddNew('Morning')}
+              onClick={handleAddNew}
               className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold shadow-sm hover:bg-indigo-700 transition-all"
             >
               Add Your First Medicine
@@ -166,7 +163,7 @@ export default function MedicineTracker() {
                   <Sunrise size={24} className="text-amber-500" />
                   Morning
                 </h2>
-                <button onClick={() => handleAddNew('Morning')} className="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Add Morning Medicine">
+                <button onClick={handleAddNew} className="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Add Medicine">
                   <Plus size={20} />
                 </button>
               </div>
@@ -188,7 +185,7 @@ export default function MedicineTracker() {
                   <Sun size={24} className="text-sky-500" />
                   Afternoon
                 </h2>
-                <button onClick={() => handleAddNew('Afternoon')} className="p-2 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="Add Afternoon Medicine">
+                <button onClick={handleAddNew} className="p-2 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="Add Medicine">
                   <Plus size={20} />
                 </button>
               </div>
@@ -210,7 +207,7 @@ export default function MedicineTracker() {
                   <Moon size={24} className="text-indigo-500" />
                   Night
                 </h2>
-                <button onClick={() => handleAddNew('Night')} className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors" title="Add Night Medicine">
+                <button onClick={handleAddNew} className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors" title="Add Medicine">
                   <Plus size={20} />
                 </button>
               </div>
@@ -260,7 +257,6 @@ export default function MedicineTracker() {
         onClose={() => setIsModalOpen(false)} 
         onSave={handleSaveMedicine}
         editMedicine={medicineToEdit} 
-        fixedFrequency={fixedFrequency}
       />
     </div>
   );
