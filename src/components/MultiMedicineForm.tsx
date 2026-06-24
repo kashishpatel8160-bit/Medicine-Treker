@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScheduleType } from '../types';
-import { X, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, CheckCircle, Plus, Info, Sunrise, Sun, Moon } from 'lucide-react';
 
 interface MultiMedicineFormProps {
   initialNames: string[];
@@ -50,7 +50,7 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
           <div>
             <h3 className="text-lg font-bold text-slate-900">Add Multiple Medicines</h3>
@@ -62,8 +62,16 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
         </div>
 
         <div className="p-4 flex-1 overflow-y-auto space-y-4 bg-slate-100/50">
+          {/* Informational Message */}
+          <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-3 shadow-sm">
+            <Info className="text-indigo-600 shrink-0 mt-0.5" size={18} />
+            <p className="text-xs font-semibold text-indigo-800 leading-relaxed">
+              Every medicine is automatically scheduled for Morning, Afternoon, and Night. No manual scheduling is required.
+            </p>
+          </div>
+
           {medicines.length === 0 ? (
-            <p className="text-center text-slate-500 py-8">No medicines to add.</p>
+            <p className="text-center text-slate-500 py-8 bg-white rounded-xl border border-slate-200 shadow-sm">No medicines to add.</p>
           ) : (
             medicines.map((med, index) => {
               const isExpanded = expandedId === med.id;
@@ -81,7 +89,7 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
                       </div>
                       <div>
                         <h4 className="font-bold text-slate-800">{med.medicine_name || 'Unnamed Medicine'}</h4>
-                        <p className="text-xs text-slate-500">{med.dosage} • {med.schedule_type.replace('_', ' ')}</p>
+                        <p className="text-xs text-slate-500">Qty: {med.quantity} • Auto-Scheduled for Morning, Afternoon, Night</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -99,69 +107,26 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
 
                   {/* Body (Expanded) */}
                   {isExpanded && (
-                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-semibold uppercase text-slate-500">Medicine Name</label>
-                          <input
-                            type="text"
-                            value={med.medicine_name}
-                            onChange={(e) => updateMedicine(med.id, 'medicine_name', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-semibold uppercase text-slate-500">Dosage</label>
-                          <input
-                            type="text"
-                            value={med.dosage}
-                            onChange={(e) => updateMedicine(med.id, 'dosage', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
-                        </div>
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-4 animate-fade-in">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold uppercase text-slate-500">Medicine Name</label>
+                        <input
+                          type="text"
+                          value={med.medicine_name}
+                          onChange={(e) => updateMedicine(med.id, 'medicine_name', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"
+                        />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-semibold uppercase text-slate-500">Schedule Type</label>
-                          <select
-                            value={med.schedule_type}
-                            onChange={(e) => updateMedicine(med.id, 'schedule_type', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          >
-                            <option value="daily">Daily</option>
-                            <option value="twice_daily">Twice Daily</option>
-                            <option value="three_times_daily">Three times Daily</option>
-                            <option value="alternate_days">Alternate Days</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="custom">Custom</option>
-                          </select>
-                        </div>
-                        
-                        {(med.schedule_type === 'weekly' || med.schedule_type === 'custom') && (
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-semibold uppercase text-slate-500">Specific Days</label>
-                            <input
-                              type="text"
-                              value={med.schedule_days}
-                              onChange={(e) => updateMedicine(med.id, 'schedule_days', e.target.value)}
-                              placeholder="e.g. Mon, Wed, Fri"
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label className="block text-xs font-semibold uppercase text-slate-500">Total Quantity</label>
                           <input
                             type="number"
                             value={med.quantity}
-                            onChange={(e) => updateMedicine(med.id, 'quantity', parseInt(e.target.value))}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            onChange={(e) => updateMedicine(med.id, 'quantity', parseInt(e.target.value) || '')}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"
+                            min="1"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -169,18 +134,29 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
                           <input
                             type="number"
                             value={med.low_stock_threshold}
-                            onChange={(e) => updateMedicine(med.id, 'low_stock_threshold', parseInt(e.target.value))}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            onChange={(e) => updateMedicine(med.id, 'low_stock_threshold', parseInt(e.target.value) || '')}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"
+                            min="1"
                           />
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-semibold uppercase text-slate-500">Start Date</label>
-                          <input
-                            type="date"
-                            value={med.start_date}
-                            onChange={(e) => updateMedicine(med.id, 'start_date', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold uppercase text-slate-500">Notes (Optional)</label>
+                        <textarea
+                          value={med.notes}
+                          onChange={(e) => updateMedicine(med.id, 'notes', e.target.value)}
+                          placeholder="e.g. Take after food"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[60px] font-medium text-slate-800"
+                        />
+                      </div>
+
+                      {/* Automatic Schedule Indicator */}
+                      <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg space-y-2">
+                        <div className="flex justify-center gap-4 text-xs font-bold text-slate-600">
+                          <span className="flex items-center gap-1"><Sunrise size={14} className="text-amber-500" /> Morning</span>
+                          <span className="flex items-center gap-1"><Sun size={14} className="text-sky-500" /> Afternoon</span>
+                          <span className="flex items-center gap-1"><Moon size={14} className="text-indigo-500" /> Night</span>
                         </div>
                       </div>
                     </div>
@@ -191,19 +167,23 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
           )}
           
           <button 
-            onClick={() => setMedicines(prev => [...prev, {
-              id: `temp-${Date.now()}`,
-              medicine_name: '',
-              dosage: '1 tablet',
-              quantity: 30,
-              low_stock_threshold: 10,
-              schedule_type: 'daily',
-              frequency: 'Morning, Afternoon, Night',
-              schedule_days: '',
-              start_date: new Date().toISOString().split('T')[0],
-              notes: ''
-            }])}
-            className="w-full flex justify-center items-center gap-2 py-3 border-2 border-dashed border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 transition-colors font-semibold text-sm"
+            onClick={() => {
+              const newId = `temp-${Date.now()}`;
+              setMedicines(prev => [...prev, {
+                id: newId,
+                medicine_name: '',
+                dosage: '1 tablet',
+                quantity: 30,
+                low_stock_threshold: 10,
+                schedule_type: 'daily',
+                frequency: 'Morning, Afternoon, Night',
+                schedule_days: '',
+                start_date: new Date().toISOString().split('T')[0],
+                notes: ''
+              }]);
+              setExpandedId(newId);
+            }}
+            className="w-full flex justify-center items-center gap-2 py-3 border-2 border-dashed border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 transition-colors font-semibold text-sm bg-white shadow-sm"
           >
             <Plus size={16} /> Add Another Medicine Manually
           </button>
@@ -216,7 +196,7 @@ export function MultiMedicineForm({ initialNames, onClose, onSaveAll }: MultiMed
           <button 
             onClick={handleSaveAll}
             disabled={isSaving || medicines.length === 0}
-            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md"
+            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md active:scale-95"
           >
             {isSaving ? 'Saving...' : `Save ${medicines.length} Medicines`}
             {!isSaving && <CheckCircle size={16} />}

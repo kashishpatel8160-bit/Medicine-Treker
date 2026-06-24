@@ -213,103 +213,89 @@ export default function Dashboard() {
             )}
 
             {/* Today's Schedule Section */}
-            <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <Clock size={20} className="text-indigo-500" />
+            <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                  <Clock size={22} className="text-indigo-600" />
                   Today's Medicines
                 </h2>
+                <Link to="/dashboard/medicine-tracker" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
+                  View All
+                </Link>
               </div>
-              
-              <div className="p-0">
-                {todayMedicines.length === 0 ? (
-                  <div className="py-16 flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                      <Pill className="text-slate-400" size={24} />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-1">Nothing scheduled for today!</h3>
-                    <p className="text-slate-500 text-sm max-w-sm">You have no medicines scheduled for {currentDayNameShort}.</p>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-slate-100">
-                    {todayMedicines.map((med) => {
-                      const frequencySlots = med.frequency.split(',').map(f => f.trim());
-                      return (
-                        <li key={med.id} className="p-6 hover:bg-slate-50/50 transition-colors">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                                <Pill size={20} />
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-lg text-slate-800 leading-tight">{med.medicine_name}</h3>
-                                <p className="text-sm text-slate-500 mt-0.5">{med.dosage} • {med.quantity} total stock</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="space-y-2 mt-3 pl-13">
-                            {frequencySlots.map((time, idx) => {
-                              const status = getDoseStatusToday(med, time);
-                              const displayTime = time === 'Day/Afternoon' ? 'Afternoon' : time;
-                              let TimeIcon = Clock;
-                              let bgClass = "bg-white";
-                              let iconClass = "text-slate-400";
-                              
-                              if (time === 'Morning') {
-                                TimeIcon = Sunrise;
-                                bgClass = "bg-amber-50/50";
-                                iconClass = "text-amber-500";
-                              } else if (time === 'Afternoon' || time === 'Day/Afternoon') {
-                                TimeIcon = Sun;
-                                bgClass = "bg-sky-50/50";
-                                iconClass = "text-sky-500";
-                              } else if (time === 'Night') {
-                                TimeIcon = Moon;
-                                bgClass = "bg-indigo-50/50";
-                                iconClass = "text-indigo-500";
-                              }
 
-                              return (
-                                <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border border-slate-100 shadow-sm ${bgClass}`}>
-                                  <div className="flex items-center gap-2">
-                                    <TimeIcon size={18} className={iconClass} />
-                                    <span className="font-semibold text-slate-700">{displayTime}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {status === 'taken' ? (
-                                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-semibold">
-                                        <CheckCircle size={16} /> Taken
-                                      </span>
-                                    ) : status === 'missed' ? (
-                                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-700 rounded-lg text-sm font-semibold">
-                                        <XCircle size={16} /> Missed
-                                      </span>
-                                    ) : (
-                                      <div className="flex items-center gap-2">
-                                        <button 
-                                          onClick={() => markTaken(med.id, time, 'taken', todayStr)}
-                                          className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 border border-emerald-200"
-                                        >
-                                          <CheckCircle size={14} /> Mark Taken
-                                        </button>
-                                        <button 
-                                          onClick={() => markTaken(med.id, time, 'missed', todayStr)}
-                                          className="px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-semibold transition-colors"
-                                        >
-                                          Skip
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Morning Column */}
+                <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4 flex flex-col">
+                  <div className="flex items-center gap-2 pb-2 border-b border-amber-100">
+                    <Sunrise className="text-amber-500" size={20} />
+                    <span className="font-bold text-sm text-amber-800">Morning ({todayMedicines.length})</span>
+                  </div>
+                  <div className="space-y-3 flex-1">
+                    {todayMedicines.length === 0 ? (
+                      <p className="text-center text-xs text-slate-400 py-6">No medicines</p>
+                    ) : (
+                      todayMedicines.map(med => (
+                        <DashboardMedicineCard 
+                          key={`morning-${med.id}`}
+                          med={med}
+                          timeSlot="Morning"
+                          status={getDoseStatusToday(med, 'Morning')}
+                          markTaken={markTaken}
+                          todayStr={todayStr}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Afternoon Column */}
+                <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4 flex flex-col">
+                  <div className="flex items-center gap-2 pb-2 border-b border-sky-100">
+                    <Sun className="text-sky-500" size={20} />
+                    <span className="font-bold text-sm text-sky-800">Afternoon ({todayMedicines.length})</span>
+                  </div>
+                  <div className="space-y-3 flex-1">
+                    {todayMedicines.length === 0 ? (
+                      <p className="text-center text-xs text-slate-400 py-6">No medicines</p>
+                    ) : (
+                      todayMedicines.map(med => (
+                        <DashboardMedicineCard 
+                          key={`afternoon-${med.id}`}
+                          med={med}
+                          timeSlot="Afternoon"
+                          status={getDoseStatusToday(med, 'Afternoon')}
+                          markTaken={markTaken}
+                          todayStr={todayStr}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Night Column */}
+                <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4 flex flex-col">
+                  <div className="flex items-center gap-2 pb-2 border-b border-indigo-100">
+                    <Moon className="text-indigo-500" size={20} />
+                    <span className="font-bold text-sm text-indigo-800">Night ({todayMedicines.length})</span>
+                  </div>
+                  <div className="space-y-3 flex-1">
+                    {todayMedicines.length === 0 ? (
+                      <p className="text-center text-xs text-slate-400 py-6">No medicines</p>
+                    ) : (
+                      todayMedicines.map(med => (
+                        <DashboardMedicineCard 
+                          key={`night-${med.id}`}
+                          med={med}
+                          timeSlot="Night"
+                          status={getDoseStatusToday(med, 'Night')}
+                          markTaken={markTaken}
+                          todayStr={todayStr}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </section>
           </div>
@@ -382,3 +368,56 @@ const ArrowRight = ({ size }: { size: number }) => (
     <path d="m12 5 7 7-7 7"></path>
   </svg>
 );
+
+function DashboardMedicineCard({ med, timeSlot, status, markTaken, todayStr }: any) {
+  const isLowStock = med.remaining_quantity <= med.low_stock_threshold;
+  
+  return (
+    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex gap-2">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Pill size={16} />
+          </div>
+          <div className="min-w-0">
+            <h4 className="font-bold text-xs text-slate-800 leading-tight truncate" title={med.medicine_name}>{med.medicine_name}</h4>
+            <p className="text-[10px] text-slate-400 mt-0.5">{med.dosage}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-slate-50 pt-2 flex-wrap gap-1">
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${isLowStock ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+          {isLowStock ? `Low: ${med.remaining_quantity}` : `Stock: ${med.remaining_quantity}`}
+        </span>
+        
+        <div className="flex items-center gap-1">
+          {status === 'taken' ? (
+            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-bold">
+              <CheckCircle size={10} /> Taken
+            </span>
+          ) : status === 'missed' ? (
+            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-[9px] font-bold">
+              <XCircle size={10} /> Missed
+            </span>
+          ) : (
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => markTaken(med.id, timeSlot, 'taken', todayStr)}
+                className="px-2 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded text-[9px] font-bold transition-colors flex items-center gap-0.5 border border-emerald-200"
+              >
+                <CheckCircle size={8} /> Take
+              </button>
+              <button 
+                onClick={() => markTaken(med.id, timeSlot, 'missed', todayStr)}
+                className="px-2 py-0.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded text-[9px] font-bold transition-colors"
+              >
+                Skip
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

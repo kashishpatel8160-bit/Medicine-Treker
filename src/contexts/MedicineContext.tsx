@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-import { Medicine } from '../types';
+import { Medicine, ScheduleType } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface MedicineContextType {
   medicines: Medicine[];
   loading: boolean;
-  addMedicine: (medicine: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity'>) => Promise<void>;
+  addMedicine: (medicine: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity' | 'dosage' | 'schedule_type' | 'start_date'> & { dosage?: string; schedule_type?: ScheduleType; start_date?: string }) => Promise<void>;
   updateMedicine: (id: string, medicine: Partial<Medicine>) => Promise<void>;
   removeMedicine: (id: string) => Promise<void>;
   markTaken: (id: string, timeSlot: string, status: 'taken' | 'missed', dateStr: string) => Promise<void>;
@@ -116,6 +116,21 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
 
       if (medsError) throw medsError;
 
+      // Migrate any medicines in the DB that don't have the correct frequency
+      const medsToMigrate = (medsData || []).filter((med: any) => med.frequency !== 'Morning, Afternoon, Night');
+      if (medsToMigrate.length > 0) {
+        for (const med of medsToMigrate) {
+          try {
+            await supabase
+              .from('medicines')
+              .update({ frequency: 'Morning, Afternoon, Night' })
+              .eq('id', med.id);
+          } catch (e) {
+            console.error('Failed to migrate frequency for', med.medicine_name, e);
+          }
+        }
+      }
+
       const normalized: Medicine[] = (medsData || []).map((med: any) => ({
         id: med.id,
         user_id: med.user_id,
@@ -175,20 +190,20 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchMedicines, user]);
 
-  const addMedicine = async (med: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity'>) => {
+  const addMedicine = async (med: Omit<Medicine, 'id' | 'logs' | 'created_at' | 'updated_at' | 'remaining_quantity' | 'dosage' | 'schedule_type' | 'start_date'> & { dosage?: string; schedule_type?: ScheduleType; start_date?: string }) => {
     if (!user) return;
     const now = new Date().toISOString();
     
     const payload = {
       user_id: String(user.id),
       medicine_name: med.medicine_name,
-      dosage: med.dosage,
+      dosage: med.dosage || '1 tablet',
       quantity: med.quantity,
       remaining_quantity: med.quantity, // starts full
       frequency: 'Morning, Afternoon, Night',
-      schedule_type: med.schedule_type,
-      schedule_days: med.schedule_days,
-      start_date: med.start_date,
+      schedule_type: med.schedule_type || 'daily',
+      schedule_days: med.schedule_days || '',
+      start_date: med.start_date || new Date().toISOString().split('T')[0],
       end_date: med.end_date,
       low_stock_threshold: med.low_stock_threshold,
       prescription_image: med.prescription_image,

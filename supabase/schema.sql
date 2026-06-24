@@ -13,7 +13,7 @@ CREATE TABLE medicines (
     dosage TEXT NOT NULL,
     quantity INTEGER NOT NULL,
     remaining_quantity INTEGER NOT NULL,
-    frequency TEXT NOT NULL,
+    frequency TEXT NOT NULL DEFAULT 'Morning, Afternoon, Night',
     schedule_type TEXT NOT NULL,
     schedule_days TEXT,
     start_date DATE NOT NULL,
