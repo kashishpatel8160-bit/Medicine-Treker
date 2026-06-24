@@ -1,27 +1,30 @@
 import { 
   Home, Pill, Bell, FileText, Activity, BarChart2, Users, Settings, ChevronDown 
 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
   user: any;
 }
 
 export function Sidebar({ user }: SidebarProps) {
+  const location = useLocation();
+
   const menuItems = [
-    { name: 'Dashboard', icon: Home, active: true },
-    { name: 'Medicines', icon: Pill },
-    { name: 'Reminders', icon: Bell },
-    { name: 'Prescriptions', icon: FileText },
-    { name: 'Health Records', icon: Activity },
-    { name: 'Reports', icon: BarChart2 },
-    { name: 'Family Members', icon: Users },
-    { name: 'Settings', icon: Settings },
+    { name: 'Dashboard', icon: Home, path: '/dashboard' },
+    { name: 'Medicines', icon: Pill, path: '/dashboard/medicines' },
+    { name: 'Reminders', icon: Bell, path: '/dashboard/reminders' },
+    { name: 'Prescriptions', icon: FileText, path: '/dashboard/prescriptions' },
+    { name: 'Health Records', icon: Activity, path: '/dashboard/health-records' },
+    { name: 'Reports', icon: BarChart2, path: '/dashboard/reports' },
+    { name: 'Family Members', icon: Users, path: '/dashboard/family' },
+    { name: 'Settings', icon: Settings, path: '/dashboard/settings' },
   ];
 
   return (
     <aside className="w-[260px] bg-white border-r border-slate-100 fixed h-screen flex flex-col z-20">
       <div className="p-6">
-        <div className="flex items-center gap-3">
+        <Link to="/dashboard" className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white transform -rotate-12">
             <Pill size={18} className="transform rotate-12" />
           </div>
@@ -29,23 +32,28 @@ export function Sidebar({ user }: SidebarProps) {
             <span className="font-extrabold text-lg text-slate-900 leading-tight block tracking-tight">Medicine</span>
             <span className="font-semibold text-[13px] text-blue-600 leading-tight block">Tracker</span>
           </div>
-        </div>
+        </Link>
       </div>
 
       <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
-        {menuItems.map((item, idx) => (
-          <button
-            key={idx}
-            className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[14px] font-semibold transition-colors ${
-              item.active 
-                ? 'bg-[#EFF4FF] text-blue-600' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <item.icon size={20} className={item.active ? 'text-blue-600' : 'text-slate-400'} />
-            {item.name}
-          </button>
-        ))}
+        {menuItems.map((item, idx) => {
+          const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+          
+          return (
+            <Link
+              key={idx}
+              to={item.path}
+              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[14px] font-semibold transition-colors ${
+                isActive 
+                  ? 'bg-[#EFF4FF] text-blue-600' 
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <item.icon size={20} className={isActive ? 'text-blue-600' : 'text-slate-400'} />
+              {item.name}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Promo Card */}

@@ -4,7 +4,9 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { MedicineProvider } from './contexts/MedicineContext';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
-import MedicineTracker from './pages/MedicineTracker';
+import Medicines from './pages/Medicines';
+import Reminders from './pages/Reminders';
+import Prescriptions from './pages/Prescriptions';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -37,14 +39,40 @@ export default function App() {
               } 
             />
             
-            {/* Protected Medicine Tracker Route */}
+            {/* Protected Medicines Route */}
             <Route 
-              path="/dashboard/medicine-tracker" 
+              path="/dashboard/medicines" 
               element={
                 <ProtectedRoute>
-                  <MedicineTracker />
+                  <Medicines />
                 </ProtectedRoute>
               } 
+            />
+
+            {/* Protected Reminders Route */}
+            <Route 
+              path="/dashboard/reminders" 
+              element={
+                <ProtectedRoute>
+                  <Reminders />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Protected Prescriptions Route */}
+            <Route 
+              path="/dashboard/prescriptions" 
+              element={
+                <ProtectedRoute>
+                  <Prescriptions />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Redirect old path */}
+            <Route 
+              path="/dashboard/medicine-tracker" 
+              element={<Navigate to="/dashboard/medicines" replace />} 
             />
             
             {/* Catch-all route mapping to dashboard if authenticated, else handled by ProtectedRoute */}

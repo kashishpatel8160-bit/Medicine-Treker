@@ -23,7 +23,7 @@ export function RecentAndQuickActions({ recentMedicines, onUploadPrescription }:
       <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50 flex flex-col">
         <div className="flex justify-between items-center mb-5">
           <h3 className="text-[15px] font-extrabold text-slate-900">Recent Medicines</h3>
-          <Link to="/dashboard/medicine-tracker" className="text-blue-600 text-[12px] font-bold hover:underline">View all</Link>
+          <Link to="/dashboard/medicines" className="text-blue-600 text-[12px] font-bold hover:underline">View all</Link>
         </div>
         <div className="space-y-4 flex-1">
           {recentMedicines.length === 0 ? (

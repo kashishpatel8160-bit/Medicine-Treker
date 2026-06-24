@@ -89,7 +89,7 @@ export function TodaysSchedule({ schedule, onMarkAllTaken, onToggleIndividual }:
       </div>
 
       <div className="mt-4 pt-4 border-t border-slate-50">
-        <Link to="/dashboard/medicine-tracker" className="text-blue-600 text-[13px] font-bold flex items-center gap-1 hover:underline w-max">
+        <Link to="/dashboard/reminders" className="text-blue-600 text-[13px] font-bold flex items-center gap-1 hover:underline w-max">
           View full schedule <ChevronRight size={16} />
         </Link>
       </div>
