@@ -1,4 +1,5 @@
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Search, Bell, LogOut } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface TopbarProps {
   user: any;
@@ -6,6 +7,8 @@ interface TopbarProps {
 }
 
 export function Topbar({ user, onMenuToggle }: TopbarProps) {
+  const { logout } = useAuth();
+
   return (
     <header className="px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center sticky top-0 z-30 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
       <div className="flex items-center gap-4 flex-1">
@@ -58,6 +61,15 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
             </span>
           </div>
         </div>
+
+        {/* Logout Button */}
+        <button 
+          onClick={logout}
+          className="w-10 h-10 ml-1 bg-red-50 dark:bg-red-950/30 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shrink-0"
+          title="Logout"
+        >
+          <LogOut size={18} />
+        </button>
       </div>
     </header>
   );
