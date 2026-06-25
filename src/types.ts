@@ -22,6 +22,7 @@ export interface Medicine {
   schedule_days?: string;
   start_date: string;
   end_date?: string;
+  duration_days?: number;
   low_stock_threshold: number;
   prescription_image?: string;
   created_at: string;

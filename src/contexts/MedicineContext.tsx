@@ -31,10 +31,20 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       const parsed = stored ? JSON.parse(stored) : [];
-      return parsed.map((m: any) => ({
-        ...m,
-        frequency: 'Morning, Afternoon, Night'
-      }));
+      return parsed.map((m: any) => {
+        let duration_days = m.duration_days;
+        if (!duration_days && m.start_date && m.end_date) {
+          const start = new Date(m.start_date).getTime();
+          const end = new Date(m.end_date).getTime();
+          const diffTime = Math.abs(end - start);
+          duration_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        }
+        return {
+          ...m,
+          frequency: m.frequency || 'Morning, Afternoon, Night',
+          duration_days
+        };
+      });
     } catch {
       return [];
     }
@@ -58,7 +68,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
           dosage: med.dosage,
           quantity: med.quantity,
           remaining_quantity: med.remaining_quantity,
-          frequency: 'Morning, Afternoon, Night',
+          frequency: med.frequency || 'Morning, Afternoon, Night',
           schedule_type: med.schedule_type,
           schedule_days: med.schedule_days,
           start_date: med.start_date,
@@ -116,47 +126,43 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
 
       if (medsError) throw medsError;
 
-      // Migrate any medicines in the DB that don't have the correct frequency
-      const medsToMigrate = (medsData || []).filter((med: any) => med.frequency !== 'Morning, Afternoon, Night');
-      if (medsToMigrate.length > 0) {
-        for (const med of medsToMigrate) {
-          try {
-            await supabase
-              .from('medicines')
-              .update({ frequency: 'Morning, Afternoon, Night' })
-              .eq('id', med.id);
-          } catch (e) {
-            console.error('Failed to migrate frequency for', med.medicine_name, e);
-          }
+      const normalized: Medicine[] = (medsData || []).map((med: any) => {
+        let duration_days = undefined;
+        if (med.start_date && med.end_date) {
+          const start = new Date(med.start_date).getTime();
+          const end = new Date(med.end_date).getTime();
+          const diffTime = Math.abs(end - start);
+          duration_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         }
-      }
 
-      const normalized: Medicine[] = (medsData || []).map((med: any) => ({
-        id: med.id,
-        user_id: med.user_id,
-        medicine_name: med.medicine_name,
-        dosage: med.dosage,
-        quantity: med.quantity,
-        remaining_quantity: med.remaining_quantity,
-        frequency: 'Morning, Afternoon, Night',
-        schedule_type: med.schedule_type,
-        schedule_days: med.schedule_days,
-        start_date: med.start_date,
-        end_date: med.end_date,
-        low_stock_threshold: med.low_stock_threshold,
-        prescription_image: med.prescription_image,
-        created_at: med.created_at,
-        updated_at: med.updated_at,
-        notes: med.notes,
-        logs: (med.dose_logs || []).map((l: any) => ({
-          id: l.id,
-          date: l.date,
-          timeSlot: l.time_slot,
-          status: l.status,
-          tabletsTaken: l.tablets_taken,
-          timestamp: l.timestamp
-        }))
-      }));
+        return {
+          id: med.id,
+          user_id: med.user_id,
+          medicine_name: med.medicine_name,
+          dosage: med.dosage,
+          quantity: med.quantity,
+          remaining_quantity: med.remaining_quantity,
+          frequency: med.frequency || 'Morning, Afternoon, Night',
+          schedule_type: med.schedule_type,
+          schedule_days: med.schedule_days,
+          start_date: med.start_date,
+          end_date: med.end_date,
+          duration_days,
+          low_stock_threshold: med.low_stock_threshold,
+          prescription_image: med.prescription_image,
+          created_at: med.created_at,
+          updated_at: med.updated_at,
+          notes: med.notes,
+          logs: (med.dose_logs || []).map((l: any) => ({
+            id: l.id,
+            date: l.date,
+            timeSlot: l.time_slot,
+            status: l.status,
+            tabletsTaken: l.tablets_taken,
+            timestamp: l.timestamp
+          }))
+        };
+      });
       setMedicines(normalized);
     } catch (err: any) {
       console.warn("Supabase fetch failed, displaying sync error.", err);
@@ -194,17 +200,24 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     const now = new Date().toISOString();
     
+    let calculatedEndDate = med.end_date;
+    if (med.duration_days && med.start_date) {
+      const start = new Date(med.start_date);
+      const end = new Date(start.getTime() + (med.duration_days - 1) * 24 * 60 * 60 * 1000);
+      calculatedEndDate = end.toISOString().split('T')[0];
+    }
+    
     const payload = {
       user_id: String(user.id),
       medicine_name: med.medicine_name,
       dosage: med.dosage || '1 tablet',
       quantity: med.quantity,
       remaining_quantity: med.quantity, // starts full
-      frequency: 'Morning, Afternoon, Night',
+      frequency: med.frequency || 'Morning, Afternoon, Night',
       schedule_type: med.schedule_type || 'daily',
       schedule_days: med.schedule_days || '',
       start_date: med.start_date || new Date().toISOString().split('T')[0],
-      end_date: med.end_date,
+      end_date: calculatedEndDate,
       low_stock_threshold: med.low_stock_threshold,
       prescription_image: med.prescription_image,
       notes: med.notes
@@ -232,10 +245,25 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     const target = medicines.find(m => m.id === id);
     if (!target) return;
     
+    let calculatedEndDate = med.end_date;
+    if (med.duration_days !== undefined || med.start_date !== undefined) {
+      const activeStartDate = med.start_date || target.start_date;
+      const activeDuration = med.duration_days !== undefined ? med.duration_days : target.duration_days;
+      
+      if (activeDuration && activeStartDate) {
+        const start = new Date(activeStartDate);
+        const end = new Date(start.getTime() + (activeDuration - 1) * 24 * 60 * 60 * 1000);
+        calculatedEndDate = end.toISOString().split('T')[0];
+      } else if (med.duration_days === null || med.duration_days === 0) {
+        calculatedEndDate = undefined; // ongoing
+      }
+    }
+
     const updatedMedicineItem: Medicine = {
       ...target,
       ...med,
-      frequency: 'Morning, Afternoon, Night',
+      end_date: calculatedEndDate !== undefined ? calculatedEndDate : (med.end_date !== undefined ? med.end_date : target.end_date),
+      frequency: med.frequency || target.frequency || 'Morning, Afternoon, Night',
       updated_at: new Date().toISOString()
     };
     
@@ -265,11 +293,11 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
         if (updatedMedicineItem.remaining_quantity !== undefined) {
           payload.remaining_quantity = updatedMedicineItem.remaining_quantity;
         }
-        payload.frequency = 'Morning, Afternoon, Night';
+        payload.frequency = updatedMedicineItem.frequency;
         if (med.schedule_type !== undefined) payload.schedule_type = med.schedule_type;
         if (med.schedule_days !== undefined) payload.schedule_days = med.schedule_days;
         if (med.start_date !== undefined) payload.start_date = med.start_date;
-        if (med.end_date !== undefined) payload.end_date = med.end_date;
+        payload.end_date = updatedMedicineItem.end_date || null;
         if (med.low_stock_threshold !== undefined) payload.low_stock_threshold = med.low_stock_threshold;
         if (med.prescription_image !== undefined) payload.prescription_image = med.prescription_image;
         if (med.notes !== undefined) payload.notes = med.notes;

@@ -16,7 +16,7 @@ import { MultiMedicineForm } from '../components/MultiMedicineForm';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { medicines, markTaken, removeDoseLog, addMedicine } = useMedicines();
+  const { medicines, markTaken, addMedicine, updateMedicine } = useMedicines();
   const [greeting, setGreeting] = useState('');
 
   // OCR Wizard states
@@ -37,6 +37,10 @@ export default function Dashboard() {
   // Filter medicines meant for today based on schedule_type
   const todayMedicines = useMemo(() => {
     return medicines.filter(med => {
+      // Check start/end date range
+      if (med.start_date && todayStr < med.start_date) return false;
+      if (med.end_date && todayStr > med.end_date) return false;
+
       if (['daily', 'twice_daily', 'three_times_daily'].includes(med.schedule_type)) return true;
       if (['weekly', 'custom'].includes(med.schedule_type)) {
         if (!med.schedule_days) return false;
@@ -44,53 +48,67 @@ export default function Dashboard() {
       }
       return true;
     });
-  }, [medicines, currentDayNameShort]);
+  }, [medicines, todayStr, currentDayNameShort]);
 
   // Derived Stats
   const totalMedicinesCount = medicines.length;
 
-  const takenTodayCount = useMemo(() => {
-    return medicines.reduce((acc, med) => {
-      const logs = med.logs?.filter(l => l.date === todayStr && l.status === 'taken') || [];
-      return acc + logs.length;
-    }, 0);
-  }, [medicines, todayStr]);
-
-  const missedTodayCount = useMemo(() => {
-    return medicines.reduce((acc, med) => {
-      const logs = med.logs?.filter(l => l.date === todayStr && l.status === 'missed') || [];
-      return acc + logs.length;
-    }, 0);
-  }, [medicines, todayStr]);
+  const lowStockCount = useMemo(() => {
+    return medicines.filter(med => med.remaining_quantity < 10 || med.remaining_quantity <= med.low_stock_threshold).length;
+  }, [medicines]);
 
   const getDoseLog = (medicine: Medicine, timeSlot: string) => {
     return medicine.logs?.find(l => l.date === todayStr && l.timeSlot === timeSlot);
   };
 
+  const parseSlotTime = (timeStr: string) => {
+    const now = new Date();
+    const dateStr = format(now, 'yyyy-MM-dd');
+    try {
+      if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
+        return parse(`${dateStr} ${timeStr}`, 'yyyy-MM-dd hh:mm a', new Date());
+      } else {
+        return parse(`${dateStr} ${timeStr}`, 'yyyy-MM-dd HH:mm', new Date());
+      }
+    } catch (e) {
+      return now;
+    }
+  };
+
   // Build the flat schedule list for today
   const todaySchedule = useMemo(() => {
     const scheduleItems: { med: Medicine, timeSlot: string, timeLabel: string }[] = [];
+    
     todayMedicines.forEach(med => {
-      if (med.schedule_type === 'three_times_daily') {
-        scheduleItems.push({ med, timeSlot: 'Morning', timeLabel: '08:30 AM' });
-        scheduleItems.push({ med, timeSlot: 'Afternoon', timeLabel: '02:00 PM' });
-        scheduleItems.push({ med, timeSlot: 'Night', timeLabel: '08:00 PM' });
-      } else if (med.schedule_type === 'twice_daily') {
-        scheduleItems.push({ med, timeSlot: 'Morning', timeLabel: '08:30 AM' });
-        scheduleItems.push({ med, timeSlot: 'Night', timeLabel: '08:00 PM' });
-      } else {
-        scheduleItems.push({ med, timeSlot: 'Morning', timeLabel: '10:00 AM' });
-      }
+      const freq = med.frequency || 'Morning, Afternoon, Night';
+      const parts = freq.split(',');
+      const defaultTimes: Record<string, string> = {
+        Morning: '08:30 AM',
+        Afternoon: '02:00 PM',
+        Night: '08:00 PM'
+      };
+
+      parts.forEach(part => {
+        const trimmed = part.trim();
+        if (!trimmed) return;
+        
+        const match = trimmed.match(/^([A-Za-z]+)\s*\(([^)]+)\)$/);
+        if (match) {
+          scheduleItems.push({ med, timeSlot: match[1], timeLabel: match[2] });
+        } else {
+          scheduleItems.push({ med, timeSlot: trimmed, timeLabel: defaultTimes[trimmed] || '08:00 AM' });
+        }
+      });
     });
 
     return scheduleItems.sort((a, b) => {
-      const timeA = parse(a.timeLabel, 'hh:mm a', new Date()).getTime();
-      const timeB = parse(b.timeLabel, 'hh:mm a', new Date()).getTime();
+      const timeA = parseSlotTime(a.timeLabel).getTime();
+      const timeB = parseSlotTime(b.timeLabel).getTime();
       return timeA - timeB;
     }).map(item => {
       const log = getDoseLog(item.med, item.timeSlot);
       let status = 'Upcoming';
-      const itemTime = parse(item.timeLabel, 'hh:mm a', new Date());
+      const itemTime = parseSlotTime(item.timeLabel);
       const now = new Date();
       
       if (log?.status === 'taken') {
@@ -107,31 +125,38 @@ export default function Dashboard() {
     });
   }, [todayMedicines, todayStr, medicines]);
 
-  const dueTodayCount = todaySchedule.length;
+  const takenTodayCount = useMemo(() => {
+    return todaySchedule.filter(item => item.status === 'Taken').length;
+  }, [todaySchedule]);
+
+  const missedTodayCount = useMemo(() => {
+    return todaySchedule.filter(item => item.status === 'Missed').length;
+  }, [todaySchedule]);
+
   const upcomingReminders = todaySchedule.filter(item => item.status === 'Upcoming' || item.status === 'Due Soon');
 
   // Actions
-  const handleToggleIndividual = async (medicine: Medicine, timeSlot: string, logId?: string) => {
+  const handleMarkSlotTaken = async (slot: string) => {
+    const slotItems = todaySchedule.filter(item => item.timeSlot === slot && item.status !== 'Taken');
     try {
-      if (logId) {
-        await removeDoseLog(medicine.id, logId);
-      } else {
-        await markTaken(medicine.id, timeSlot, 'taken', todayStr);
+      for (const item of slotItems) {
+        await markTaken(item.med.id, item.timeSlot, 'taken', todayStr);
       }
     } catch (err) {
-      console.error('Failed to toggle dose', err);
+      console.error(`Failed to mark all ${slot} taken`, err);
     }
   };
+  const lowStockMedicines = useMemo(() => {
+    return medicines.filter(med => med.remaining_quantity < 10 || med.remaining_quantity <= med.low_stock_threshold);
+  }, [medicines]);
 
-  const handleMarkAllTaken = async () => {
-    try {
-      for (const item of todaySchedule) {
-        if (item.status !== 'Taken') {
-          await markTaken(item.med.id, item.timeSlot, 'taken', todayStr);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to mark all taken', err);
+  const handleRestock = async (id: string, qty: number) => {
+    const med = medicines.find(m => m.id === id);
+    if (med) {
+      await updateMedicine(id, {
+        quantity: med.quantity + qty,
+        remaining_quantity: med.remaining_quantity + qty
+      });
     }
   };
 
@@ -152,15 +177,14 @@ export default function Dashboard() {
           <div className="flex-1 flex flex-col gap-6">
             <StatCards 
               totalMedicines={totalMedicinesCount}
-              dueToday={dueTodayCount}
-              missed={missedTodayCount}
-              completed={takenTodayCount}
+              takenToday={takenTodayCount}
+              missedToday={missedTodayCount}
+              lowStock={lowStockCount}
             />
             
             <TodaysSchedule 
               schedule={todaySchedule}
-              onMarkAllTaken={handleMarkAllTaken}
-              onToggleIndividual={handleToggleIndividual}
+              onMarkSlotTaken={handleMarkSlotTaken}
             />
             
             <RecentAndQuickActions 
@@ -170,7 +194,11 @@ export default function Dashboard() {
           </div>
 
           {/* Right Column Area */}
-          <RightSidebarWidgets upcomingReminders={upcomingReminders} />
+          <RightSidebarWidgets 
+            upcomingReminders={upcomingReminders} 
+            lowStockMedicines={lowStockMedicines}
+            onRestock={handleRestock}
+          />
         </div>
       </div>
 

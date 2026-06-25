@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Medicines from './pages/Medicines';
 import Reminders from './pages/Reminders';
 import Prescriptions from './pages/Prescriptions';
+import History from './pages/History';
+import Settings from './pages/Settings';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -65,6 +67,26 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Prescriptions />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Protected History Route */}
+            <Route 
+              path="/dashboard/history" 
+              element={
+                <ProtectedRoute>
+                  <History />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Protected Settings Route */}
+            <Route 
+              path="/dashboard/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               } 
             />

@@ -1,5 +1,5 @@
 import { 
-  Home, Pill, Bell, FileText, X, LogOut 
+  Home, Pill, Bell, FileText, X, LogOut, History, Settings 
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,6 +19,8 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     { name: 'Medicines', icon: Pill, path: '/dashboard/medicines' },
     { name: 'Reminders', icon: Bell, path: '/dashboard/reminders' },
     { name: 'Prescriptions', icon: FileText, path: '/dashboard/prescriptions' },
+    { name: 'History', icon: History, path: '/dashboard/history' },
+    { name: 'Settings', icon: Settings, path: '/dashboard/settings' },
   ];
 
   const handleLogout = async () => {
