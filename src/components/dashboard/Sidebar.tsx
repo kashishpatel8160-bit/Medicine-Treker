@@ -21,13 +21,12 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     { name: 'Settings', icon: Settings, path: '/dashboard/settings' },
   ];
 
-  const handleLogout = async () => {
-    if (window.confirm("Are you sure you want to sign out?")) {
-      try {
-        await logout();
-      } catch (err) {
-        console.error("Logout failed:", err);
-      }
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout failed:", err);
     }
   };
 
@@ -99,6 +98,7 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             </div>
           </div>
           <button 
+            type="button"
             onClick={handleLogout}
             className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors shrink-0"
             title="Sign Out"

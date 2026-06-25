@@ -30,7 +30,8 @@ export default function Login() {
         <div className="bg-white py-8 px-4 shadow sm:rounded-2xl sm:px-10 border border-slate-100">
           <div className="space-y-6">
             <button
-              onClick={loginWithGoogle}
+              type="button"
+              onClick={(e) => { e.preventDefault(); loginWithGoogle(); }}
               className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-slate-300 rounded-xl shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" className="w-5 h-5" />

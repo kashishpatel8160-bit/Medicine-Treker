@@ -64,7 +64,8 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
 
         {/* Logout Button */}
         <button 
-          onClick={logout}
+          type="button"
+          onClick={(e) => { e.preventDefault(); logout(); }}
           className="w-10 h-10 ml-1 bg-red-50 dark:bg-red-950/30 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shrink-0"
           title="Logout"
         >
