@@ -14,7 +14,7 @@ export function MedicineCard({ medicine, onEdit, onDelete, onViewDetails }: Medi
 
   if (medicine.frequency_type) {
     if (medicine.frequency_type === 'daily') scheduleText = 'Every Day';
-    else if (medicine.frequency_type === 'alternate_days') scheduleText = \`Every \${medicine.frequency_interval || 2} Days\`;
+    else if (medicine.frequency_type === 'alternate_days') scheduleText = `Every ${medicine.frequency_interval || 2} Days`;
     else if (medicine.frequency_type === 'weekly') {
       try {
         const days = JSON.parse(medicine.selected_weekdays || '[]');
@@ -34,22 +34,24 @@ export function MedicineCard({ medicine, onEdit, onDelete, onViewDetails }: Medi
   }
 
   const dosageNum = parseFloat(medicine.dosage) || 1;
-  const dailyConsumption = dailyDoses * dosageNum;
+  const dailyConsumption = medicine.tablets_per_day || (dailyDoses * dosageNum);
   
   let remainingDays = 0;
   if (dailyConsumption > 0) {
     remainingDays = Math.floor(medicine.remaining_quantity / dailyConsumption);
-    if (medicine.frequency_type === 'alternate_days') remainingDays *= (medicine.frequency_interval || 2);
-    if (medicine.frequency_type === 'weekly' && medicine.selected_weekdays) {
-      try {
-        const days = JSON.parse(medicine.selected_weekdays);
-        if (days.length > 0) remainingDays *= (7 / days.length);
-      } catch (e) {}
+    if (!medicine.tablets_per_day) {
+      if (medicine.frequency_type === 'alternate_days') remainingDays *= (medicine.frequency_interval || 2);
+      if (medicine.frequency_type === 'weekly' && medicine.selected_weekdays) {
+        try {
+          const days = JSON.parse(medicine.selected_weekdays);
+          if (days.length > 0) remainingDays *= (7 / days.length);
+        } catch (e) {}
+      }
     }
     remainingDays = Math.floor(remainingDays);
   }
 
-  const isLowStock = remainingDays <= 7 && remainingDays > 3;
+  const isLowStock = remainingDays <= 10 && remainingDays > 3;
   const isCritical = remainingDays <= 3;
   
   const status = isCritical ? 'Critical' : isLowStock ? 'Low Stock' : 'Active';
@@ -64,7 +66,7 @@ export function MedicineCard({ medicine, onEdit, onDelete, onViewDetails }: Medi
           <div>
             <h3 className="font-extrabold text-[15px] text-slate-900 dark:text-white leading-tight">{medicine.medicine_name}</h3>
             <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-               {medicine.dosage} • {dailyDoses}x {scheduleText}
+               {scheduleText}
             </p>
           </div>
         </div>
@@ -78,16 +80,28 @@ export function MedicineCard({ medicine, onEdit, onDelete, onViewDetails }: Medi
         </div>
       </div>
       
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 space-y-2">
         <div className="flex justify-between items-center text-[13px]">
-          <span className="text-slate-500 dark:text-slate-400 font-medium">Stock Left</span>
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Dosage</span>
           <span className="font-extrabold text-slate-900 dark:text-white">
-            {medicine.remaining_quantity}
+            {medicine.dosage || 'N/A'}
           </span>
         </div>
         <div className="flex justify-between items-center text-[13px]">
-          <span className="text-slate-500 dark:text-slate-400 font-medium">Remaining Days</span>
-          <span className={\`font-extrabold \${isCritical ? 'text-red-500' : isLowStock ? 'text-orange-500' : 'text-slate-900 dark:text-white'}\`}>
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Tablets Per Day</span>
+          <span className="font-extrabold text-slate-900 dark:text-white">
+            {medicine.tablets_per_day || dailyConsumption || 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between items-center text-[13px]">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Total Stock</span>
+          <span className="font-extrabold text-slate-900 dark:text-white">
+            {medicine.remaining_quantity} Tablets
+          </span>
+        </div>
+        <div className="flex justify-between items-center text-[13px]">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Remaining</span>
+          <span className={`font-extrabold ${isCritical ? 'text-red-500' : isLowStock ? 'text-orange-500' : 'text-slate-900 dark:text-white'}`}>
             {remainingDays} Days
           </span>
         </div>

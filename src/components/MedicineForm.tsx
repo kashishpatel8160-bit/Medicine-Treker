@@ -22,6 +22,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [dosage, setDosage] = useState('1 tablet');
+  const [tabletsPerDay, setTabletsPerDay] = useState<number | ''>('');
   const [quantity, setQuantity] = useState<number | ''>('');
   const [lowStockThreshold, setLowStockThreshold] = useState<number | ''>(10);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -58,30 +59,20 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
     return `${hoursStr}:${minutes} ${ampm}`;
   };
 
+  // Calculate remaining days
   useEffect(() => {
-    if (quantity && quantity > 0) {
-      const dosesPerDay = customTimes.length;
-      const dosageNum = parseFloat(dosage) || 1;
-      const dailyTablets = dosesPerDay * dosageNum;
-      
-      if (dailyTablets > 0) {
-        // Rough estimate (doesn't account for skip days or non-daily schedules perfectly)
-        let days = Math.floor(Number(quantity) / dailyTablets);
-        if (frequencyType === 'alternate_days') days = days * frequencyInterval;
-        if (frequencyType === 'weekly' && selectedWeekdays.length > 0) days = days * (7 / selectedWeekdays.length);
-        setEstimatedDays(Math.floor(days));
-      } else {
-        setEstimatedDays(0);
-      }
+    if (quantity && quantity > 0 && tabletsPerDay && tabletsPerDay > 0) {
+      setEstimatedDays(Math.floor(Number(quantity) / Number(tabletsPerDay)));
     } else {
       setEstimatedDays(0);
     }
-  }, [quantity, dosage, customTimes, frequencyType, frequencyInterval, selectedWeekdays]);
+  }, [quantity, tabletsPerDay]);
 
   useEffect(() => {
     if (editMedicine) {
       setName(editMedicine.medicine_name);
       setDosage(editMedicine.dosage || '1 tablet');
+      setTabletsPerDay(editMedicine.tablets_per_day || '');
       setQuantity(editMedicine.quantity);
       setLowStockThreshold(editMedicine.low_stock_threshold);
       setStartDate(editMedicine.start_date || new Date().toISOString().split('T')[0]);
@@ -114,6 +105,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
     } else {
       setName('');
       setDosage('1 tablet');
+      setTabletsPerDay('');
       setQuantity('');
       setLowStockThreshold(10);
       setStartDate(new Date().toISOString().split('T')[0]);
@@ -179,7 +171,8 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
     e.preventDefault();
 
     if (!name.trim()) return setError('Medicine name is required');
-    if (!quantity || quantity <= 0) return setError('Total quantity must be greater than 0');
+    if (!tabletsPerDay || tabletsPerDay <= 0) return setError('Tablets Per Day must be greater than 0');
+    if (!quantity || quantity <= 0) return setError('Total Tablets Available must be greater than 0');
     if (customTimes.length === 0) return setError('At least one time must be selected');
     if (frequencyType === 'weekly' && selectedWeekdays.length === 0) return setError('Select at least one weekday');
     if (frequencyType === 'alternate_days' && (!frequencyInterval || frequencyInterval < 2)) return setError('Interval must be at least 2 days');
@@ -187,9 +180,9 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
     // Create a legacy frequency string for fallback
     const freqParts = customTimes.map(time => {
       const h = parseInt(time.split(':')[0], 10);
-      if (h < 12) return \`Morning (\${to12h(time)})\`;
-      if (h < 17) return \`Afternoon (\${to12h(time)})\`;
-      return \`Night (\${to12h(time)})\`;
+      if (h < 12) return `Morning (${to12h(time)})`;
+      if (h < 17) return `Afternoon (${to12h(time)})`;
+      return `Night (${to12h(time)})`;
     });
     const frequencyStr = freqParts.join(', ');
 
@@ -197,6 +190,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
       medicine_name: name.trim(),
       dosage: dosage.trim(),
       quantity: Number(quantity),
+      tablets_per_day: Number(tabletsPerDay),
       low_stock_threshold: Number(lowStockThreshold || 10),
       schedule_type: 'custom', // Use custom to avoid old parsing logic
       frequency: frequencyStr,
@@ -245,16 +239,37 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100" />
             </div>
             
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 md:col-span-1">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Dosage</label>
               <input type="text" value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="e.g. 500mg, 1 Tablet" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100" />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Total Quantity (Stock)</label>
+            <div className="space-y-1.5 md:col-span-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Tablets Per Day</label>
+              <input type="number" value={tabletsPerDay} onChange={(e) => setTabletsPerDay(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g. 2" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100" min="0.1" step="0.1" />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Total Tablets Available</label>
               <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100" min="1" />
             </div>
           </div>
+          
+          {quantity && tabletsPerDay && quantity > 0 && tabletsPerDay > 0 && (
+            <div className={`p-4 rounded-xl border flex items-center justify-between ${estimatedDays <= 10 ? 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800/50' : 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/50'}`}>
+              <div>
+                <span className="block text-[13px] font-bold text-slate-600 dark:text-slate-300">Remaining Days</span>
+                <span className={`text-xl font-extrabold ${estimatedDays <= 10 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {estimatedDays} Days
+                </span>
+              </div>
+              {estimatedDays <= 10 && (
+                <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-bold text-sm bg-orange-100/50 dark:bg-orange-900/50 px-3 py-1.5 rounded-lg">
+                  <span className="text-lg">⚠</span> Only {estimatedDays} days of medicine remaining
+                </div>
+              )}
+            </div>
+          )}
 
           <hr className="border-slate-100 dark:border-slate-800" />
 
@@ -270,7 +285,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
                   key={type}
                   type="button"
                   onClick={() => setFrequencyType(type as any)}
-                  className={\`px-3 py-2 rounded-lg text-xs font-semibold border transition-all \${frequencyType === type ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'}\`}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${frequencyType === type ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'}`}
                 >
                   {type === 'daily' ? 'Every Day' : type === 'alternate_days' ? 'Intervals' : type === 'weekly' ? 'Specific Days' : 'Custom Days'}
                 </button>
@@ -292,7 +307,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
                     key={day}
                     type="button"
                     onClick={() => toggleWeekday(day)}
-                    className={\`px-3 py-1.5 rounded-full text-xs font-medium border \${selectedWeekdays.includes(day) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300'}\`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border ${selectedWeekdays.includes(day) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300'}`}
                   >
                     {day.substring(0, 3)}
                   </button>
@@ -309,7 +324,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({
                     key={freq}
                     type="button"
                     onClick={() => handleFrequencyChange(freq)}
-                    className={\`px-3 py-1.5 rounded-lg text-xs font-semibold border \${dosageFrequency === freq ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'}\`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${dosageFrequency === freq ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'}`}
                   >
                     {freq.charAt(0).toUpperCase() + freq.slice(1)} {freq !== 'custom' && 'Daily'}
                   </button>

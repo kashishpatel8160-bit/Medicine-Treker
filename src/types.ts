@@ -17,6 +17,7 @@ export interface Medicine {
   dosage: string;
   quantity: number;
   remaining_quantity: number;
+  tablets_per_day?: number;
   frequency: string; 
   frequency_type?: 'daily' | 'alternate_days' | 'weekly' | 'custom_days';
   frequency_interval?: number;
