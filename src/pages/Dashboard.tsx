@@ -40,6 +40,38 @@ export default function Dashboard() {
       if (med.start_date && todayStr < med.start_date) return false;
       if (med.end_date && todayStr > med.end_date) return false;
 
+      // Check skip dates
+      if (med.skip_dates) {
+        try {
+          const skips = JSON.parse(med.skip_dates);
+          if (skips.includes(todayStr)) return false;
+        } catch (e) {}
+      }
+
+      const freqType = med.frequency_type || (['daily', 'twice_daily', 'three_times_daily'].includes(med.schedule_type) ? 'daily' : 'weekly');
+      
+      if (freqType === 'daily') return true;
+      
+      if (freqType === 'alternate_days') {
+        const interval = med.frequency_interval || 2;
+        const start = new Date(med.start_date || todayStr);
+        const today = new Date(todayStr);
+        const diffTime = Math.abs(today.getTime() - start.getTime());
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays % interval === 0;
+      }
+      
+      if (freqType === 'weekly' || freqType === 'custom_days') {
+        try {
+          if (med.selected_weekdays) {
+            const days = JSON.parse(med.selected_weekdays);
+            const todayFullDayName = format(new Date(), 'EEEE');
+            return days.includes(todayFullDayName);
+          }
+        } catch (e) {}
+      }
+
+      // Fallback for older records
       if (['daily', 'twice_daily', 'three_times_daily'].includes(med.schedule_type)) return true;
       if (['weekly', 'custom'].includes(med.schedule_type)) {
         if (!med.schedule_days) return false;
@@ -79,6 +111,26 @@ export default function Dashboard() {
     const scheduleItems: { med: Medicine, timeSlot: string, timeLabel: string }[] = [];
     
     todayMedicines.forEach(med => {
+      if (med.custom_times) {
+        try {
+          const times = JSON.parse(med.custom_times);
+          if (times.length > 0) {
+            times.forEach((time: string) => {
+              const dateStr = format(new Date(), 'yyyy-MM-dd');
+              let parsedDate;
+              try {
+                parsedDate = parse(`${dateStr} ${time}`, 'yyyy-MM-dd HH:mm', new Date());
+              } catch (e) {
+                parsedDate = new Date();
+              }
+              const timeLabel = format(parsedDate, 'hh:mm a');
+              scheduleItems.push({ med, timeSlot: time, timeLabel });
+            });
+            return; // Skip fallback
+          }
+        } catch (e) {}
+      }
+
       const freq = med.frequency || 'Morning, Afternoon, Night';
       const parts = freq.split(',');
       const defaultTimes: Record<string, string> = {

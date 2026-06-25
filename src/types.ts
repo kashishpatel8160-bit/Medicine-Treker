@@ -18,6 +18,12 @@ export interface Medicine {
   quantity: number;
   remaining_quantity: number;
   frequency: string; 
+  frequency_type?: 'daily' | 'alternate_days' | 'weekly' | 'custom_days';
+  frequency_interval?: number;
+  selected_weekdays?: string;
+  custom_times?: string;
+  skip_dates?: string;
+  skip_date_ranges?: string;
   schedule_type: ScheduleType;
   schedule_days?: string;
   start_date: string;
