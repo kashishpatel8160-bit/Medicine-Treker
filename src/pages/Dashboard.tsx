@@ -7,8 +7,7 @@ import { format, isAfter, parse } from 'date-fns';
 import { DashboardLayout } from '../components/dashboard/DashboardLayout';
 import { StatCards } from '../components/dashboard/StatCards';
 import { TodaysSchedule } from '../components/dashboard/TodaysSchedule';
-import { RightSidebarWidgets } from '../components/dashboard/RightSidebarWidgets';
-import { RecentAndQuickActions } from '../components/dashboard/RecentAndQuickActions';
+import { LowStockAlerts } from '../components/dashboard/LowStockAlerts';
 
 // Existing Features
 import { OCRWizard } from '../components/OCRWizard';
@@ -133,7 +132,6 @@ export default function Dashboard() {
     return todaySchedule.filter(item => item.status === 'Missed').length;
   }, [todaySchedule]);
 
-  const upcomingReminders = todaySchedule.filter(item => item.status === 'Upcoming' || item.status === 'Due Soon');
 
   // Actions
   const handleMarkSlotTaken = async (slot: string) => {
@@ -171,34 +169,32 @@ export default function Dashboard() {
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1">Here's your medicine overview for today.</p>
         </div>
         
-        {/* Responsive Flex Containers */}
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Column Area */}
-          <div className="flex-1 flex flex-col gap-6">
-            <StatCards 
-              totalMedicines={totalMedicinesCount}
-              takenToday={takenTodayCount}
-              missedToday={missedTodayCount}
-              lowStock={lowStockCount}
-            />
-            
+        <StatCards 
+          totalMedicines={totalMedicinesCount}
+          takenToday={takenTodayCount}
+          missedToday={missedTodayCount}
+          lowStock={lowStockCount}
+        />
+        
+        {/* Grid Layout */}
+        <div className={`grid grid-cols-1 gap-6 ${lowStockMedicines.length > 0 ? 'lg:grid-cols-3' : ''}`}>
+          {/* Main Column */}
+          <div className={lowStockMedicines.length > 0 ? 'lg:col-span-2' : ''}>
             <TodaysSchedule 
               schedule={todaySchedule}
               onMarkSlotTaken={handleMarkSlotTaken}
             />
-            
-            <RecentAndQuickActions 
-              recentMedicines={medicines}
-              onUploadPrescription={() => setIsOcrWizardOpen(true)}
-            />
           </div>
 
-          {/* Right Column Area */}
-          <RightSidebarWidgets 
-            upcomingReminders={upcomingReminders} 
-            lowStockMedicines={lowStockMedicines}
-            onRestock={handleRestock}
-          />
+          {/* Right Column (Low Stock) */}
+          {lowStockMedicines.length > 0 && (
+            <div className="lg:col-span-1">
+              <LowStockAlerts 
+                lowStockMedicines={lowStockMedicines}
+                onRestock={handleRestock}
+              />
+            </div>
+          )}
         </div>
       </div>
 

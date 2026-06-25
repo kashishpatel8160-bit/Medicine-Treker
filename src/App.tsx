@@ -5,9 +5,7 @@ import { MedicineProvider } from './contexts/MedicineContext';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Medicines from './pages/Medicines';
-import Reminders from './pages/Reminders';
 import Prescriptions from './pages/Prescriptions';
-import History from './pages/History';
 import Settings from './pages/Settings';
 
 // Protected Route Component
@@ -51,16 +49,6 @@ export default function App() {
               } 
             />
 
-            {/* Protected Reminders Route */}
-            <Route 
-              path="/dashboard/reminders" 
-              element={
-                <ProtectedRoute>
-                  <Reminders />
-                </ProtectedRoute>
-              } 
-            />
-
             {/* Protected Prescriptions Route */}
             <Route 
               path="/dashboard/prescriptions" 
@@ -71,16 +59,6 @@ export default function App() {
               } 
             />
             
-            {/* Protected History Route */}
-            <Route 
-              path="/dashboard/history" 
-              element={
-                <ProtectedRoute>
-                  <History />
-                </ProtectedRoute>
-              } 
-            />
-
             {/* Protected Settings Route */}
             <Route 
               path="/dashboard/settings" 

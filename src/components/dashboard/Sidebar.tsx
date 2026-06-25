@@ -1,5 +1,5 @@
 import { 
-  Home, Pill, Bell, FileText, X, LogOut, History, Settings 
+  Home, Pill, FileText, X, LogOut, Settings 
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,9 +17,7 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const menuItems = [
     { name: 'Dashboard', icon: Home, path: '/dashboard' },
     { name: 'Medicines', icon: Pill, path: '/dashboard/medicines' },
-    { name: 'Reminders', icon: Bell, path: '/dashboard/reminders' },
     { name: 'Prescriptions', icon: FileText, path: '/dashboard/prescriptions' },
-    { name: 'History', icon: History, path: '/dashboard/history' },
     { name: 'Settings', icon: Settings, path: '/dashboard/settings' },
   ];
 
@@ -81,22 +79,6 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         })}
       </nav>
 
-      {/* Promo Card (hidden on smaller screen widths) */}
-      <div className="px-4 pb-4 hidden lg:block">
-        <div className="bg-[#EFF4FF] dark:bg-blue-950/20 rounded-2xl p-5 text-center relative border border-blue-50/50 dark:border-blue-900/20">
-          <div className="flex justify-center mb-3">
-            <div className="w-10 h-14 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-blue-100 dark:border-blue-900/30 flex items-center justify-center relative">
-               <Bell size={20} className="text-pink-400 absolute -right-2 -top-2 bg-white dark:bg-slate-800 rounded-full p-0.5" />
-               <div className="w-6 h-10 border-2 border-blue-50 dark:border-slate-700 rounded-md"></div>
-            </div>
-          </div>
-          <h4 className="font-extrabold text-slate-900 dark:text-white text-[14px] mb-1">Never miss a dose!</h4>
-          <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-4 font-medium leading-relaxed">Stay on track with notifications.</p>
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold py-3 rounded-2xl transition-colors shadow-sm">
-            Enable Now
-          </button>
-        </div>
-      </div>
 
       {/* User Profile & Sign Out */}
       <div className="p-4 border-t border-slate-100 dark:border-slate-800">

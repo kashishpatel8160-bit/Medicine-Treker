@@ -140,7 +140,7 @@ export default function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-xs font-extrabold text-slate-855 dark:text-white">Weekly Summary Email</h4>
-                <p className="text-[11px] text-slate-450 dark:text-slate-500 font-semibold mt-0.5">Receive a weekly digest report of completion status and streaks.</p>
+                <p className="text-[11px] text-slate-450 dark:text-slate-500 font-semibold mt-0.5">Receive a weekly digest report of completion status.</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer select-none">
                 <input 
