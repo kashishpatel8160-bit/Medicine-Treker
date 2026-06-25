@@ -18,7 +18,7 @@ export function RecentAndQuickActions({ recentMedicines, onUploadPrescription }:
   };
 
   return (
-    <div className="grid grid-cols-2 gap-6 mt-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
       {/* Recent Medicines */}
       <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50 flex flex-col">
         <div className="flex justify-between items-center mb-5">
@@ -51,8 +51,8 @@ export function RecentAndQuickActions({ recentMedicines, onUploadPrescription }:
 
       {/* Quick Actions */}
       <div>
-        <h3 className="text-[15px] font-extrabold text-slate-900 mb-5 pl-1">Quick Actions</h3>
-        <div className="grid grid-cols-4 gap-3">
+        <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white mb-5 pl-1">Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <button className="bg-white p-4 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50 flex flex-col items-center justify-center gap-3 hover:-translate-y-1 transition-transform group">
             <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
               <Plus size={20} />

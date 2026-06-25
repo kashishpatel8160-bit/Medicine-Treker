@@ -7,7 +7,7 @@ interface RightSidebarWidgetsProps {
 
 export function RightSidebarWidgets({ upcomingReminders }: RightSidebarWidgetsProps) {
   return (
-    <div className="w-[340px] shrink-0 space-y-6">
+    <div className="w-full lg:w-[340px] shrink-0 space-y-6">
       {/* Streak Widget */}
       <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50 relative overflow-hidden">
         <div className="flex items-center gap-2 mb-6">

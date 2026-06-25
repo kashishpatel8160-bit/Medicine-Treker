@@ -57,31 +57,31 @@ export function TodaysSchedule({ schedule, onMarkAllTaken, onToggleIndividual }:
           <div className="text-center py-10 text-slate-400 font-medium">No medicines scheduled for today.</div>
         ) : (
           schedule.map((item, index) => (
-            <div key={`${item.med.id}-${item.timeSlot}`} className="flex items-center justify-between py-4 border-b border-slate-50 last:border-0 group hover:bg-slate-50/50 px-2 rounded-xl transition-colors">
-              <div className="flex items-center gap-4 w-5/12">
+            <div key={`${item.med.id}-${item.timeSlot}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-slate-50 dark:border-slate-800 last:border-0 group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-2 rounded-xl transition-colors">
+              <div className="flex items-center gap-4 min-w-0 sm:w-5/12">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${getIconStyles(index)}`}>
                   <Pill size={20} />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-extrabold text-slate-900 text-[14px] truncate">{item.med.medicine_name}</h4>
-                  <p className="text-[12px] text-slate-500 font-medium mt-0.5 truncate">{item.med.dosage} • After {item.timeSlot}</p>
+                  <h4 className="font-extrabold text-slate-900 dark:text-white text-[14px] truncate">{item.med.medicine_name}</h4>
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate">{item.med.dosage} • After {item.timeSlot}</p>
                 </div>
               </div>
               
-              <div className="w-3/12 flex justify-center">
+              <div className="flex items-center justify-between sm:justify-end sm:w-7/12 gap-6">
                 <button 
                   onClick={() => onToggleIndividual(item.med, item.timeSlot, item.log?.id)}
                   className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-transform hover:scale-105 active:scale-95 ${getStatusStyles(item.status)}`}
                 >
                   {item.status}
                 </button>
-              </div>
-
-              <div className="w-4/12 flex justify-end items-center gap-6">
-                <span className="text-[14px] font-extrabold text-slate-900 whitespace-nowrap">{item.timeLabel}</span>
-                <button className="text-slate-400 hover:text-slate-600">
-                  <MoreVertical size={20} />
-                </button>
+                
+                <div className="flex items-center gap-4">
+                  <span className="text-[14px] font-extrabold text-slate-900 dark:text-white whitespace-nowrap">{item.timeLabel}</span>
+                  <button className="text-slate-400 hover:text-slate-650 dark:hover:text-slate-350">
+                    <MoreVertical size={20} />
+                  </button>
+                </div>
               </div>
             </div>
           ))

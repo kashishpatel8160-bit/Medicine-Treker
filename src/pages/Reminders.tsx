@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMedicines } from '../contexts/MedicineContext';
-import { Sidebar } from '../components/dashboard/Sidebar';
+import { DashboardLayout } from '../components/dashboard/DashboardLayout';
 import { PageHeader } from '../components/dashboard/PageHeader';
 import { ReminderCard } from '../components/dashboard/ReminderCard';
 import { MedicineForm } from '../components/MedicineForm';
@@ -42,7 +42,6 @@ export default function Reminders() {
         scheduleItems.push({ med, timeSlot: 'Morning', timeLabel: '08:30 AM', group: 'Morning' });
         scheduleItems.push({ med, timeSlot: 'Night', timeLabel: '08:00 PM', group: 'Night' });
       } else {
-        // Simple logic to place in morning if single dose
         scheduleItems.push({ med, timeSlot: 'Morning', timeLabel: '10:00 AM', group: 'Morning' });
       }
     });
@@ -89,75 +88,71 @@ export default function Reminders() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-800">
-      <Sidebar user={user} />
+    <DashboardLayout>
+      <PageHeader 
+        title="Reminders" 
+        subtitle="Stay on track with your daily medication schedule." 
+        user={user} 
+      />
       
-      <main className="ml-[260px] flex-1 flex flex-col min-h-screen pb-10">
-        <PageHeader 
-          title="Reminders" 
-          subtitle="Stay on track with your daily medication schedule." 
-          user={user} 
-        />
-        
-        <div className="px-8 flex flex-col gap-6">
-          {/* Daily Progress */}
-          <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-[16px] font-extrabold text-slate-900">Daily Progress</h3>
-                <p className="text-[13px] text-slate-500 font-medium">{completedCount} of {totalCount} reminders completed</p>
-              </div>
-              <span className="text-[20px] font-extrabold text-blue-600">{progressPercentage}%</span>
+      <div className="flex flex-col gap-6">
+        {/* Daily Progress */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 dark:border-slate-800">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-[16px] font-extrabold text-slate-900 dark:text-white">Daily Progress</h3>
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium">{completedCount} of {totalCount} reminders completed</p>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-3">
-              <div 
-                className="bg-blue-600 h-3 rounded-full transition-all duration-500" 
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
+            <span className="text-[20px] font-extrabold text-blue-600 dark:text-blue-400">{progressPercentage}%</span>
           </div>
-
-          {/* Groups */}
-          <div className="space-y-6">
-            {groups.map(group => {
-              const groupSchedule = schedule.filter(s => s.group === group);
-              if (groupSchedule.length === 0) return null;
-
-              return (
-                <div key={group} className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-[16px] font-extrabold text-slate-900">{group}</h3>
-                    <button 
-                      onClick={() => handleMarkAllTaken(group)}
-                      className="flex items-center gap-1.5 text-blue-600 bg-[#EFF4FF] hover:bg-blue-100 px-4 py-2 rounded-xl text-[13px] font-bold transition-colors"
-                    >
-                      <CheckCircle size={16} /> Mark all taken
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {groupSchedule.map(item => (
-                      <ReminderCard 
-                        key={`${item.med.id}-${item.timeSlot}`}
-                        item={item}
-                        onMark={(status) => handleMark(item.med.id, item.timeSlot, status)}
-                        onEdit={() => {
-                          setMedicineToEdit(item.med);
-                          setIsModalOpen(true);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-            {totalCount === 0 && (
-               <div className="text-center py-10 text-slate-400 font-medium">
-                 No reminders for today.
-               </div>
-            )}
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3">
+            <div 
+              className="bg-blue-600 h-3 rounded-full transition-all duration-500" 
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
           </div>
         </div>
-      </main>
+
+        {/* Groups */}
+        <div className="space-y-6">
+          {groups.map(group => {
+            const groupSchedule = schedule.filter(s => s.group === group);
+            if (groupSchedule.length === 0) return null;
+
+            return (
+              <div key={group} className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
+                  <h3 className="text-[16px] font-extrabold text-slate-900 dark:text-white">{group} Schedule</h3>
+                  <button 
+                    onClick={() => handleMarkAllTaken(group)}
+                    className="flex items-center gap-1.5 text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-4 py-2 rounded-xl text-[13px] font-bold transition-colors w-max"
+                  >
+                    <CheckCircle size={16} /> Mark all taken
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {groupSchedule.map(item => (
+                    <ReminderCard 
+                      key={`${item.med.id}-${item.timeSlot}`}
+                      item={item}
+                      onMark={(status) => handleMark(item.med.id, item.timeSlot, status)}
+                      onEdit={() => {
+                        setMedicineToEdit(item.med);
+                        setIsModalOpen(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {totalCount === 0 && (
+             <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-150 dark:border-slate-800 text-slate-400 font-medium">
+               No reminders scheduled for today.
+             </div>
+          )}
+        </div>
+      </div>
 
       <MedicineForm
         isOpen={isModalOpen} 
@@ -170,6 +165,6 @@ export default function Reminders() {
         }}
         editMedicine={medicineToEdit} 
       />
-    </div>
+    </DashboardLayout>
   );
 }

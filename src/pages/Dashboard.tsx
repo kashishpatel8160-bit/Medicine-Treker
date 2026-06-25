@@ -4,9 +4,7 @@ import { useMedicines } from '../contexts/MedicineContext';
 import { Medicine } from '../types';
 import { format, isAfter, parse } from 'date-fns';
 
-// Components
-import { Sidebar } from '../components/dashboard/Sidebar';
-import { Header } from '../components/dashboard/Header';
+import { DashboardLayout } from '../components/dashboard/DashboardLayout';
 import { StatCards } from '../components/dashboard/StatCards';
 import { TodaysSchedule } from '../components/dashboard/TodaysSchedule';
 import { RightSidebarWidgets } from '../components/dashboard/RightSidebarWidgets';
@@ -138,13 +136,18 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-800">
-      <Sidebar user={user} />
-      
-      <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-        <Header user={user} greeting={greeting} />
+    <DashboardLayout>
+      <div className="flex flex-col gap-6">
+        {/* Welcome Banner */}
+        <div className="mb-2">
+          <h1 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+            {greeting}, {user?.name?.split(' ')[0] || 'Amit'} <span className="text-2xl">👋</span>
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1">Here's your medicine overview for today.</p>
+        </div>
         
-        <div className="px-8 pb-10 flex gap-6">
+        {/* Responsive Flex Containers */}
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Column Area */}
           <div className="flex-1 flex flex-col gap-6">
             <StatCards 
@@ -169,7 +172,7 @@ export default function Dashboard() {
           {/* Right Column Area */}
           <RightSidebarWidgets upcomingReminders={upcomingReminders} />
         </div>
-      </main>
+      </div>
 
       {/* OCR Wizards */}
       {isOcrWizardOpen && (
@@ -199,7 +202,7 @@ export default function Dashboard() {
           }}
         />
       )}
-    </div>
+    </DashboardLayout>
   );
 }
 

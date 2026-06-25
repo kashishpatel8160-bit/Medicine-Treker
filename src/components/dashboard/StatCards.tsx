@@ -9,7 +9,7 @@ interface StatCardsProps {
 
 export function StatCards({ totalMedicines, dueToday, missed, completed }: StatCardsProps) {
   return (
-    <div className="grid grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {/* Total Medicines */}
       <div className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50 flex items-center gap-5 transition-transform hover:-translate-y-1">
         <div className="w-14 h-14 rounded-2xl bg-[#EFF4FF] text-blue-600 flex items-center justify-center shrink-0">
