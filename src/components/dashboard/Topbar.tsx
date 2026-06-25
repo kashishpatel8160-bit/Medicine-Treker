@@ -1,5 +1,6 @@
 import { Menu, Search, Bell, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface TopbarProps {
   user: any;
@@ -42,35 +43,48 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
         </button>
         
         {/* User Profile Summary */}
-        <div className="flex items-center gap-3 pl-3 border-l border-slate-100 dark:border-slate-800">
-          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <div className="text-blue-600 font-bold bg-[#EFF4FF] dark:bg-blue-950 w-full h-full flex items-center justify-center text-sm">
-                {user?.name?.charAt(0) || 'A'}
+        {user ? (
+          <>
+            <div className="flex items-center gap-3 pl-3 border-l border-slate-100 dark:border-slate-800">
+              <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-blue-600 font-bold bg-[#EFF4FF] dark:bg-blue-950 w-full h-full flex items-center justify-center text-sm">
+                    {user.name?.charAt(0) || 'U'}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <div className="hidden md:flex flex-col text-left">
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate leading-tight">
-              {user?.name || 'Amit Kumar'}
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium truncate max-w-[100px]">
-              {user?.email || 'amit@example.com'}
-            </span>
-          </div>
-        </div>
+              <div className="hidden md:flex flex-col text-left">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate leading-tight">
+                  {user.name || 'User'}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium truncate max-w-[100px]">
+                  {user.email}
+                </span>
+              </div>
+            </div>
 
-        {/* Logout Button */}
-        <button 
-          type="button"
-          onClick={(e) => { e.preventDefault(); logout(); }}
-          className="w-10 h-10 ml-1 bg-red-50 dark:bg-red-950/30 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shrink-0"
-          title="Logout"
-        >
-          <LogOut size={18} />
-        </button>
+            {/* Logout Button */}
+            <button 
+              type="button"
+              onClick={(e) => { e.preventDefault(); logout(); }}
+              className="w-10 h-10 ml-1 bg-red-50 dark:bg-red-950/30 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shrink-0"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center pl-3 border-l border-slate-100 dark:border-slate-800">
+            <Link
+              to="/login"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              Login
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );
